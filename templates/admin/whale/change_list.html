@@ -1,0 +1,20 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block content_title %}
+    {% if subtitle %}
+        {{ title|default:cl.opts.verbose_name_plural|capfirst }}
+        <small class="d-block text-muted fw-normal mt-1" style="font-size:0.9rem;">{{ subtitle }}</small>
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+{% endblock %}
+
+{% block extrajs %}
+    {{ block.super }}
+    {% if drawer_add %}
+    <script>
+        document.body.dataset.drawerAdd = 'true';
+    </script>
+    {% endif %}
+{% endblock %}

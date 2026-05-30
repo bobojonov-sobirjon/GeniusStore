@@ -1,0 +1,443 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --whale-bg: #f3f4f6;
+    --whale-sidebar: #ffffff;
+    --whale-border: #e5e7eb;
+    --whale-text: #111827;
+    --whale-muted: #6b7280;
+    --whale-primary: #111827;
+    --whale-accent: #2563eb;
+    --whale-radius: 12px;
+    --whale-drawer-width: 480px;
+}
+
+body,
+.main-sidebar,
+.content-wrapper,
+.form-control,
+.btn {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* ---- Sidebar (Whale Store style) ---- */
+.main-sidebar {
+    background: var(--whale-sidebar) !important;
+    border-right: 1px solid var(--whale-border);
+    box-shadow: none !important;
+}
+
+/* Hide Django username block ("admin") in sidebar */
+.user-panel {
+    display: none !important;
+}
+
+.main-sidebar .brand-link {
+    border-bottom: 1px solid var(--whale-border) !important;
+    background: var(--whale-sidebar) !important;
+    color: var(--whale-text) !important;
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: 1.1rem 1rem !important;
+}
+
+.main-sidebar .nav-sidebar > .nav-item > .nav-link {
+    color: #374151 !important;
+    border-radius: 8px;
+    margin: 2px 10px;
+    padding: 0.65rem 0.85rem !important;
+    font-weight: 500;
+}
+
+.main-sidebar .nav-sidebar > .nav-item > .nav-link.active {
+    background: #f3f4f6 !important;
+    color: var(--whale-text) !important;
+    box-shadow: inset 3px 0 0 var(--whale-accent);
+}
+
+.main-sidebar .nav-sidebar > .nav-item > .nav-link:hover {
+    background: #f9fafb !important;
+    color: var(--whale-text) !important;
+}
+
+.main-sidebar .nav-icon {
+    color: #9ca3af !important;
+    width: 1.2rem;
+}
+
+.main-header.navbar {
+    background: #fff !important;
+    border-bottom: 1px solid var(--whale-border) !important;
+    box-shadow: none !important;
+}
+
+.content-wrapper {
+    background: var(--whale-bg) !important;
+}
+
+.content-header {
+    padding: 1.5rem 1.5rem 0 !important;
+}
+
+.content-header h1,
+.content-header .m-0 {
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    color: var(--whale-text) !important;
+}
+
+.breadcrumb {
+    display: none !important;
+}
+
+/* ---- List view ---- */
+#changelist .card,
+#changelist .module,
+.change-list .card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+#result_list,
+#changelist table {
+    background: #fff;
+    border-radius: var(--whale-radius);
+    border: 1px solid var(--whale-border);
+    overflow: hidden;
+}
+
+#result_list thead th,
+#changelist table thead th {
+    background: #fff !important;
+    border-bottom: 1px solid var(--whale-border) !important;
+    color: var(--whale-muted) !important;
+    font-weight: 500 !important;
+    font-size: 0.8125rem !important;
+    text-transform: none !important;
+    padding: 0.85rem 1rem !important;
+}
+
+#result_list tbody td,
+#changelist table tbody td {
+    border-top: 1px solid #f3f4f6 !important;
+    padding: 0.9rem 1rem !important;
+    vertical-align: middle !important;
+}
+
+#result_list tbody tr:hover,
+#changelist table tbody tr:hover {
+    background: #fafafa !important;
+}
+
+.object-tools .addlink,
+.object-tools .btn,
+.whale-btn-primary {
+    background: var(--whale-primary) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    padding: 0.55rem 1.25rem !important;
+    box-shadow: none !important;
+}
+
+.object-tools .addlink:hover,
+.object-tools .btn:hover {
+    background: #374151 !important;
+    color: #fff !important;
+}
+
+#change-list-filters .form-control,
+#change-list-filters select {
+    border-radius: 10px !important;
+    border: 1px solid var(--whale-border) !important;
+    background: #fff !important;
+}
+
+/* ---- Forms ---- */
+.form-control,
+select,
+textarea,
+.vTextField,
+.vLargeTextField,
+.vURLField,
+.vIntegerField {
+    border-radius: 10px !important;
+    border: 1px solid var(--whale-border) !important;
+    background: #f9fafb !important;
+    padding: 0.6rem 0.85rem !important;
+    min-height: 42px;
+}
+
+.form-control:focus,
+select:focus,
+textarea:focus {
+    border-color: #9ca3af !important;
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08) !important;
+    background: #fff !important;
+}
+
+.change-form .card {
+    border: 1px solid var(--whale-border) !important;
+    border-radius: var(--whale-radius) !important;
+    box-shadow: none !important;
+    margin-bottom: 1rem;
+}
+
+.change-form fieldset.card h2,
+.change-form .card-header {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--whale-text) !important;
+    background: #fff !important;
+    border-bottom: 1px solid var(--whale-border) !important;
+}
+
+.change-form .submit-row input[type="submit"],
+#jazzy-actions .btn-success,
+.change-form input[name="_save"] {
+    background: #2563eb !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+}
+
+.change-form .submit-row input[name="_continue"],
+.change-form .submit-row input[name="_addanother"],
+.change-form .submit-row .btn-secondary,
+.change-form a.closelink {
+    background: #f3f4f6 !important;
+    color: var(--whale-text) !important;
+    border: 1px solid var(--whale-border) !important;
+    border-radius: 10px !important;
+}
+
+/* Product form cards */
+.model-product.change-form .whale-card {
+    background: #fff;
+    border: 1px solid var(--whale-border);
+    border-radius: var(--whale-radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.model-product.change-form .whale-card > h2 {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 1rem !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+.model-product.change-form .whale-basic-info .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.model-product.change-form .whale-basic-info .form-row.field-description {
+    grid-column: 1 / -1;
+}
+
+.model-product.change-form .whale-specs-grid .form-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.model-product.change-form .whale-specs-grid .form-row.field-product_model,
+.model-product.change-form .whale-specs-grid .form-row.field-condition {
+    grid-column: span 1;
+}
+
+.model-product.change-form .whale-product-settings .form-row.field-is_new {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--whale-border);
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.model-product.change-form .inline-group {
+    background: #fff;
+    border: 1px solid var(--whale-border);
+    border-radius: var(--whale-radius);
+    padding: 1.25rem;
+    margin-top: 1rem;
+}
+
+.model-product.change-form .inline-group h2 {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+}
+
+.model-product.change-form .inline-related.empty-form {
+    border: 2px dashed var(--whale-border);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    color: var(--whale-muted);
+}
+
+.model-product.change-form .add-row a {
+    background: var(--whale-primary) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    padding: 0.5rem 1rem !important;
+    display: inline-block;
+    margin-top: 0.75rem;
+}
+
+/* Price management */
+.model-productvariant.change-list #content-main::before {
+    content: attr(data-stats);
+    display: block;
+    color: var(--whale-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.color-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.model-productvariant.change-list #result_list input[type="text"],
+.model-productvariant.change-list #result_list input[type="number"] {
+    min-width: 90px;
+    max-width: 120px;
+}
+
+/* ---- Drawer ---- */
+.whale-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.45);
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.whale-drawer-overlay.is-visible {
+    opacity: 1;
+}
+
+.whale-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(var(--whale-drawer-width), 100vw);
+    height: 100vh;
+    background: #fff;
+    z-index: 9999;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.whale-drawer.is-visible {
+    transform: translateX(0);
+}
+
+.whale-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--whale-border);
+}
+
+.whale-drawer__header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.whale-drawer__close {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #374151;
+}
+
+.whale-drawer__body {
+    flex: 1;
+    overflow: hidden;
+}
+
+.whale-drawer__body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+body.whale-drawer-open {
+    overflow: hidden;
+}
+
+/* Drawer form (inside iframe) */
+body.whale-drawer-form .main-header,
+body.whale-drawer-form .main-sidebar,
+body.whale-drawer-form .content-header,
+body.whale-drawer-form .breadcrumb,
+body.whale-drawer-form #jazzy-actions .object-tools,
+body.whale-drawer-form .submit-row input[name="_continue"],
+body.whale-drawer-form .submit-row input[name="_addanother"] {
+    display: none !important;
+}
+
+body.whale-drawer-form .content-wrapper {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+}
+
+body.whale-drawer-form .content {
+    padding: 1.25rem !important;
+}
+
+body.whale-drawer-form #jazzy-actions {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+body.whale-drawer-form .col-lg-9,
+body.whale-drawer-form .col-lg-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+body.whale-drawer-form .submit-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+body.whale-drawer-form .submit-row input[name="_save"] {
+    background: var(--whale-primary) !important;
+    flex: 1;
+}
+
+@media (max-width: 992px) {
+    .model-product.change-form .whale-specs-grid .form-row,
+    .model-product.change-form .whale-basic-info .form-row {
+        grid-template-columns: 1fr;
+    }
+}
