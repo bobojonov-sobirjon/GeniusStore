@@ -209,7 +209,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'genius-store'),
+        'NAME': os.getenv('DB_NAME', 'geniusstore'),
         'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD', '0576'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
