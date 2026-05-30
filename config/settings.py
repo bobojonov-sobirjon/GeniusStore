@@ -288,13 +288,22 @@ SIMPLE_JWT = {
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    # Production (HTTPS — Django admin login uchun majburiy)
+    "https://admin.geniusstorerf.ru",
+    "https://geniusstorerf.ru",
+    "https://www.geniusstorerf.ru",
+    *[o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()],
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://admin.geniusstorerf.ru",
+    "https://geniusstorerf.ru",
+    "https://www.geniusstorerf.ru",
+    *[o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if o.strip()],
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
