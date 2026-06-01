@@ -9,7 +9,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from apps.common.views import APIView
 
 
 def redirect_legacy_customuser_admin(request, rest=''):

@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from apps.common.views import APIView
 
 from apps.common import jwt_tokens
 from apps.common.authentication import (

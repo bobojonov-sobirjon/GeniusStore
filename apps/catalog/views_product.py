@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from apps.common.views import APIView
 
 from apps.catalog import product_sync
 from apps.catalog.serialization import product_to_dict
