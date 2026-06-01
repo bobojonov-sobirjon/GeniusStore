@@ -525,7 +525,7 @@ class Banner(PrismaModel):
     description = models.TextField('Описание')
     img_pc = models.TextField('Изображение (ПК)', db_column='imgPc')
     img_mobile = models.TextField('Изображение (мобильный)', db_column='imgMobile')
-    created_at = models.DateTimeField('Создан', db_column='reatedAt', auto_now_add=True)
+    created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
 
     class Meta:

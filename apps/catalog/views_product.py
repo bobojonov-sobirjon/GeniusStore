@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 
+from apps.common.async_db import db_sync
 from asgiref.sync import sync_to_async
 from django.core.mail import send_mail
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny
@@ -255,10 +257,11 @@ class ProductListPagedView(APIView):
 
     @extend_schema(
         summary='Список всех товаров с пагинацией',
-        description='Параметры пути: `page`, `limit` (1-based страница). Возвращает `{ data, count }` — count в текущей реализации — длина страницы (как упрощение Nest).',
+        description='Параметры пути: `page`, `limit` (1-based страница). Возвращает `{ data, count }`.',
+        responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
     )
     async def get(self, request, page: int, limit: int):
-        data = await sync_to_async(product_sync.list_products_page)(int(page), int(limit))
+        data = await db_sync(product_sync.list_products_page)(int(page), int(limit))
         return Response(data)
 
 

@@ -1,8 +1,12 @@
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
+import logging
+
 from rest_framework import status
 from rest_framework.exceptions import APIException
+
+logger = logging.getLogger(__name__)
 
 
 # Middleware for handling JSON error responses
@@ -26,6 +30,8 @@ class JsonErrorResponseMiddleware:
         if isinstance(exception, APIException):
             detail = getattr(exception, "detail", None)
             return JsonResponse({"detail": detail if detail is not None else "Ошибка запроса."}, status=exception.status_code)
+
+        logger.exception('Unhandled API error on %s', request.path)
 
         # Fallback
         return JsonResponse({"detail": "Внутренняя ошибка сервера."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

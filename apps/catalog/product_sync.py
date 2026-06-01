@@ -6,10 +6,10 @@ import uuid
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.utils import timezone
 
-from apps.catalog.serialization import product_to_dict, variant_to_dict
+from apps.catalog.serialization import _variant_qs, product_to_dict, variant_to_dict
 from apps.common.file_storage import delete_media_relative, save_upload_file
 from apps.common.slugify_store import generate_slug
 from apps.store_core.models import (
@@ -270,30 +270,39 @@ def get_product_by_slug(slug: str) -> dict | None:
 
 
 def list_products_page(page: int, limit: int) -> dict:
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     qs = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
-    data = [product_to_dict(p) for p in qs]
+    data = [product_to_dict(p, variants=list(p.variants.all())) for p in qs]
     return {'data': data, 'count': len(data)}
 
 
 def list_products_category_id(page: int, limit: int, category_id: int) -> dict:
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     qs = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
         .filter(category_id=category_id)
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     cnt = Product.objects.filter(category_id=category_id).count()
-    return {'data': [product_to_dict(p) for p in qs], 'count': cnt}
+    return {'data': [product_to_dict(p, variants=list(p.variants.all())) for p in qs], 'count': cnt}
 
 
 def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
     from apps.store_core.models import Category
 
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     cat = Category.objects.filter(slug=slug).first()
     qs = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
         .filter(category__slug=slug)
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
@@ -303,7 +312,11 @@ def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
         if cat
         else None
     )
-    return {'data': [product_to_dict(p) for p in qs], 'category': cat_out, 'count': cnt}
+    return {
+        'data': [product_to_dict(p, variants=list(p.variants.all())) for p in qs],
+        'category': cat_out,
+        'count': cnt,
+    }
 
 
 def search_products(q: str) -> list[dict]:
