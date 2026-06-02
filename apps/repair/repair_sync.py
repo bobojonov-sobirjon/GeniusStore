@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.common.file_storage import save_upload_file
 from apps.common.media_urls import media_url, serialize_values_list, serialize_values_row
 from apps.common.slugify_store import generate_slug
+from apps.common.uuid_utils import normalize_uuid
 from apps.store_core.models import Service, ServiceBrand, ServiceModel
 
 BRAND_MEDIA_FIELDS = ('image',)
@@ -51,7 +52,10 @@ def brand_by_model():
 
 
 def brand_models(id_: str):
-    b = ServiceBrand.objects.prefetch_related('models').filter(pk=id_).first()
+    uid = normalize_uuid(id_)
+    if not uid:
+        return None
+    b = ServiceBrand.objects.prefetch_related('models').filter(pk=uid).first()
     if not b:
         return None
     return _brand_payload(b, include_models=True)
@@ -65,14 +69,20 @@ def brand_by_slug_models(slug: str):
 
 
 def brand_one(id_: str):
-    b = ServiceBrand.objects.filter(pk=id_).first()
+    uid = normalize_uuid(id_)
+    if not uid:
+        return None
+    b = ServiceBrand.objects.filter(pk=uid).first()
     if not b:
         return None
     return _brand_payload(b)
 
 
 def brand_update(id_: str, data: dict, image) -> dict:
-    b = ServiceBrand.objects.get(pk=id_)
+    uid = normalize_uuid(id_)
+    if not uid:
+        raise LookupError('Brand not found')
+    b = ServiceBrand.objects.get(pk=uid)
     if image:
         b.image = save_upload_file('image', image)
     if data.get('name'):
@@ -84,7 +94,10 @@ def brand_update(id_: str, data: dict, image) -> dict:
 
 
 def brand_delete(id_: str) -> None:
-    ServiceBrand.objects.filter(pk=id_).delete()
+    uid = normalize_uuid(id_)
+    if not uid:
+        return
+    ServiceBrand.objects.filter(pk=uid).delete()
 
 
 def sm_create(data: dict) -> ServiceModel:
@@ -107,7 +120,10 @@ def sm_page(page: int, limit: int):
 
 
 def sm_one(id_: str):
-    return serialize_values_row(ServiceModel.objects.filter(pk=id_).values().first())
+    uid = normalize_uuid(id_)
+    if not uid:
+        return None
+    return serialize_values_row(ServiceModel.objects.filter(pk=uid).values().first())
 
 
 def sm_by_slug(slug: str):
@@ -126,7 +142,10 @@ def sm_by_slug(slug: str):
 
 
 def sm_update(id_: str, data: dict) -> dict:
-    m = ServiceModel.objects.get(pk=id_)
+    uid = normalize_uuid(id_)
+    if not uid:
+        raise LookupError('Model not found')
+    m = ServiceModel.objects.get(pk=uid)
     if data.get('name'):
         m.name = data['name']
         m.slug = generate_slug(data['name'])
@@ -136,7 +155,10 @@ def sm_update(id_: str, data: dict) -> dict:
 
 
 def sm_delete(id_: str) -> None:
-    ServiceModel.objects.filter(pk=id_).delete()
+    uid = normalize_uuid(id_)
+    if not uid:
+        return
+    ServiceModel.objects.filter(pk=uid).delete()
 
 
 def svc_create(data: dict) -> Service:
@@ -161,7 +183,10 @@ def svc_page(page: int, limit: int):
 
 
 def svc_one(id_: str):
-    return serialize_values_row(Service.objects.filter(pk=id_).select_related('service_model').values().first())
+    uid = normalize_uuid(id_)
+    if not uid:
+        return None
+    return serialize_values_row(Service.objects.filter(pk=uid).select_related('service_model').values().first())
 
 
 def svc_by_slug(slug: str):
@@ -188,7 +213,10 @@ def svc_by_slug(slug: str):
 
 
 def svc_update(id_: str, data: dict) -> dict:
-    s = Service.objects.get(pk=id_)
+    uid = normalize_uuid(id_)
+    if not uid:
+        raise LookupError('Service not found')
+    s = Service.objects.get(pk=uid)
     if data.get('name'):
         s.name = data['name']
         s.slug = generate_slug(data['name'])
@@ -204,4 +232,7 @@ def svc_update(id_: str, data: dict) -> dict:
 
 
 def svc_delete(id_: str) -> None:
-    Service.objects.filter(pk=id_).delete()
+    uid = normalize_uuid(id_)
+    if not uid:
+        return
+    Service.objects.filter(pk=uid).delete()

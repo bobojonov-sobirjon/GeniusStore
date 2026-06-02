@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.http import Http404
 import logging
 
@@ -26,6 +26,11 @@ class JsonErrorResponseMiddleware:
 
         if isinstance(exception, ObjectDoesNotExist):
             return JsonResponse({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
+
+        if isinstance(exception, ValidationError) and request.path.startswith('/api/'):
+            text = ' '.join(str(m) for m in getattr(exception, 'messages', [exception]))
+            if 'uuid' in text.lower():
+                return JsonResponse({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
 
         if isinstance(exception, APIException):
             detail = getattr(exception, "detail", None)

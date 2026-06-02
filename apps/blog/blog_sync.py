@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.common.file_storage import save_upload_file
 from apps.common.media_urls import media_url, serialize_values_list, serialize_values_row
 from apps.common.slugify_store import generate_slug
+from apps.common.uuid_utils import normalize_uuid
 from apps.store_core.models import Blog, BlogCategory, BlogSteps
 
 BLOG_MEDIA_FIELDS = ('image',)
@@ -38,11 +39,17 @@ def blog_category_list():
 
 
 def blog_category_one(pk: str):
-    return serialize_values_row(BlogCategory.objects.filter(pk=pk).values().first())
+    uid = normalize_uuid(pk)
+    if not uid:
+        return None
+    return serialize_values_row(BlogCategory.objects.filter(pk=uid).values().first())
 
 
 def blog_category_update(pk: str, data: dict) -> dict:
-    c = BlogCategory.objects.get(pk=pk)
+    uid = normalize_uuid(pk)
+    if not uid:
+        raise LookupError('Category not found')
+    c = BlogCategory.objects.get(pk=uid)
     c.name = data.get('name', c.name)
     c.updated_at = timezone.now()
     c.save()
@@ -52,7 +59,10 @@ def blog_category_update(pk: str, data: dict) -> dict:
 
 
 def blog_category_delete(pk: str) -> None:
-    BlogCategory.objects.filter(pk=pk).delete()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return
+    BlogCategory.objects.filter(pk=uid).delete()
 
 
 def blog_create(data: dict, image) -> Blog:
@@ -68,8 +78,11 @@ def blog_create(data: dict, image) -> Blog:
 
 
 def blog_by_cat(cat_id: str):
+    uid = normalize_uuid(cat_id)
+    if not uid:
+        return []
     rows = []
-    for b in Blog.objects.filter(blog_category_id=cat_id).order_by('-created_at'):
+    for b in Blog.objects.filter(blog_category_id=uid).order_by('-created_at'):
         rows.append(_blog_payload(b))
     return rows
 
@@ -91,14 +104,20 @@ def blog_by_slug(slug: str) -> dict | None:
 
 
 def blog_one(pk: str) -> dict | None:
-    b = Blog.objects.prefetch_related('blogSteps').filter(pk=pk).first()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return None
+    b = Blog.objects.prefetch_related('blogSteps').filter(pk=uid).first()
     if not b:
         return None
     return _blog_payload(b)
 
 
 def blog_update(pk: str, data: dict, image) -> dict:
-    b = Blog.objects.get(pk=pk)
+    uid = normalize_uuid(pk)
+    if not uid:
+        raise LookupError('Blog not found')
+    b = Blog.objects.get(pk=uid)
     if image:
         b.image = save_upload_file('image', image)
     if data.get('title'):
@@ -114,7 +133,10 @@ def blog_update(pk: str, data: dict, image) -> dict:
 
 
 def blog_delete(pk: str) -> None:
-    Blog.objects.filter(pk=pk).delete()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return
+    Blog.objects.filter(pk=uid).delete()
 
 
 def blog_steps_create(data: dict) -> dict:
@@ -134,11 +156,17 @@ def blog_steps_list():
 
 
 def blog_steps_one(pk: str):
-    return serialize_values_row(BlogSteps.objects.filter(pk=pk).values().first())
+    uid = normalize_uuid(pk)
+    if not uid:
+        return None
+    return serialize_values_row(BlogSteps.objects.filter(pk=uid).values().first())
 
 
 def blog_steps_update(pk: str, data: dict) -> dict:
-    s = BlogSteps.objects.get(pk=pk)
+    uid = normalize_uuid(pk)
+    if not uid:
+        raise LookupError('Blog step not found')
+    s = BlogSteps.objects.get(pk=uid)
     s.title = data.get('title', s.title)
     s.content = data.get('content', s.content)
     s.updated_at = timezone.now()
@@ -149,4 +177,7 @@ def blog_steps_update(pk: str, data: dict) -> dict:
 
 
 def blog_steps_delete(pk: str) -> None:
-    BlogSteps.objects.filter(pk=pk).delete()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return
+    BlogSteps.objects.filter(pk=uid).delete()

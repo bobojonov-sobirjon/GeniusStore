@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.common.file_storage import save_upload_file
 from apps.common.media_urls import serialize_values_list, serialize_values_row
+from apps.common.uuid_utils import normalize_uuid
 from apps.store_core.models import Banner, Info
 
 BANNER_MEDIA_FIELDS = ('img_pc', 'img_mobile')
@@ -32,12 +33,18 @@ def banner_list():
 
 
 def banner_one(pk: str):
-    row = Banner.objects.filter(pk=pk).values().first()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return None
+    row = Banner.objects.filter(pk=uid).values().first()
     return serialize_values_row(row, media_fields=BANNER_MEDIA_FIELDS)
 
 
 def banner_update(pk: str, data: dict, img_pc, img_mobile) -> dict:
-    b = Banner.objects.get(pk=pk)
+    uid = normalize_uuid(pk)
+    if not uid:
+        raise LookupError('Banner not found')
+    b = Banner.objects.get(pk=uid)
     if data.get('title'):
         b.title = data['title']
     if data.get('description') is not None:
@@ -52,7 +59,10 @@ def banner_update(pk: str, data: dict, img_pc, img_mobile) -> dict:
 
 
 def banner_delete(pk: str) -> None:
-    Banner.objects.filter(pk=pk).delete()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return
+    Banner.objects.filter(pk=uid).delete()
 
 
 def info_create(data: dict) -> Info:
@@ -68,11 +78,17 @@ def info_list():
 
 
 def info_one(pk: str):
-    return serialize_values_row(Info.objects.filter(pk=pk).values().first())
+    uid = normalize_uuid(pk)
+    if not uid:
+        return None
+    return serialize_values_row(Info.objects.filter(pk=uid).values().first())
 
 
 def info_update(pk: str, data: dict) -> dict:
-    i = Info.objects.get(pk=pk)
+    uid = normalize_uuid(pk)
+    if not uid:
+        raise LookupError('Info not found')
+    i = Info.objects.get(pk=uid)
     if data.get('name'):
         i.name = data['name']
     if 'description' in data:
@@ -83,4 +99,7 @@ def info_update(pk: str, data: dict) -> dict:
 
 
 def info_delete(pk: str) -> None:
-    Info.objects.filter(pk=pk).delete()
+    uid = normalize_uuid(pk)
+    if not uid:
+        return
+    Info.objects.filter(pk=uid).delete()
