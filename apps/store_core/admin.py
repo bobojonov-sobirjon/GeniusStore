@@ -279,15 +279,39 @@ class ProductVariantAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
         return super().changelist_view(request, extra_context)
 
 
+class OrderItemInline(admin.TabularInline):
+    model = m.OrderItem
+    extra = 0
+    show_change_link = False
+    autocomplete_fields = ('product_variant',)
+    readonly_fields = ('unit_price', 'line_total', 'created_at')
+    fields = ('product_variant', 'quantity', 'unit_price', 'line_total', 'created_at')
+
+
 @admin.register(m.StoreOrder)
 class StoreOrderAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     drawer_add = False
-    list_display = ('id', 'user', 'total_sum', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('id', 'user__email', 'user__phone')
+    list_display = ('id', 'user', 'total_sum', 'delivery_type', 'items_count', 'created_at')
+    list_filter = ('delivery_type', 'created_at')
+    search_fields = ('id', 'user__email', 'user__phone', 'user__first_name', 'user__last_name')
     autocomplete_fields = ('user',)
     ordering = ('-created_at',)
-    readonly_fields = ('id', 'created_at', 'updated_at')
+    readonly_fields = ('id', 'total_sum', 'created_at', 'updated_at')
+    inlines = (OrderItemInline,)
+    fieldsets = (
+        (None, {
+            'fields': ('id', 'user', 'total_sum', 'delivery_type', 'created_at', 'updated_at'),
+            'classes': ('whale-card',),
+        }),
+        ('Адрес доставки', {
+            'fields': ('apartment', 'entrance', 'floor'),
+            'classes': ('whale-card',),
+        }),
+    )
+
+    @admin.display(description='Позиций')
+    def items_count(self, obj: m.StoreOrder) -> int:
+        return obj.items.count()
 
 
 @admin.register(m.BlogCategory)

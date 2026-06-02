@@ -22,4 +22,8 @@ urlpatterns = [
     path('blog/<str:pk>', BlogDetailView.as_view()),
     path('blog-steps', BlogStepsRootView.as_view()),
     path('blog-steps/<str:pk>', BlogStepsDetailView.as_view()),
+    # Aliases for frontend «Новости» block (same handlers as blog/*)
+    path('news/all/<int:page>/<int:limit>', BlogPagedView.as_view()),
+    path('news/slug/<slug:slug>', BlogSlugView.as_view()),
+    path('news/<str:pk>', BlogDetailView.as_view()),
 ]

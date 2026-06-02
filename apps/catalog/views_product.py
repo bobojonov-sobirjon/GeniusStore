@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-
 from apps.common.async_db import db_sync
 from asgiref.sync import sync_to_async
 from django.core.mail import send_mail
@@ -18,17 +16,12 @@ from apps.catalog.serialization import product_to_dict
 from apps.common.integrations.telegram import telegram_send_markdown
 from apps.common.openapi_requests import (
     REQ_HELP_FORM,
-    REQ_ORDER_CART,
-    REQ_ORDER_ONE,
-    REQ_ORDER_USER,
     REQ_PRODUCT_CREATE,
     REQ_PRODUCT_PATCH,
     REQ_PRODUCT_VARIANT_PATCH,
-    REQ_QUICK_ORDER,
     REQ_REPAIR_FORM,
     REQ_TRADEIN_FORM,
 )
-from apps.store_core.models import StoreOrder, StoreUser
 
 
 async def _mail(subject: str, body: str, to_list: list[str]):
@@ -146,96 +139,6 @@ class ProductRepairView(APIView):
         d = dict(request.data)
         await telegram_send_markdown(_repair_text(d))
         return Response({'ok': True})
-
-
-@extend_schema(tags=['Заказы'])
-class ProductOrder2View(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        summary='Оформление заказа с привязкой к пользователю',
-        description=(
-            'Путь содержит `userId` (UUID). Создаётся запись в таблице Order; отправляется письмо клиенту и копия на info@whalestore.ru.'
-        ),
-        request=REQ_ORDER_USER,
-    )
-    async def post(self, request, user_id: str):
-        body = dict(request.data)
-        user = await sync_to_async(lambda: StoreUser.objects.filter(pk=user_id).first())()
-        if not user:
-            raise NotFound('Пользователь не найден')
-        order = await sync_to_async(
-            lambda: StoreOrder.objects.create(
-                user_id=user_id,
-                products=body.get('products') or [],
-                total_sum=int(body.get('totalPrice') or 0),
-            )
-        )()
-        await _mail(
-            'Новый заказ',
-            json.dumps(body, ensure_ascii=False, default=str),
-            [body.get('email') or user.email, 'info@whalestore.ru'],
-        )
-        return Response({'id': str(order.id), 'totalSum': order.total_sum})
-
-
-@extend_schema(tags=['Заказы'])
-class ProductOrder4View(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        summary='Корзинный заказ (уведомление в Telegram и почту)',
-        description=(
-            'Соответствует Nest `send-order4`: краткое сообщение в Telegram и письмо с JSON тела на info@whalestore.ru.'
-        ),
-        request=REQ_ORDER_CART,
-    )
-    async def post(self, request):
-        body = dict(request.data)
-        text = f'Новый заказ: {body.get("fio")} {body.get("phone")} на {body.get("totalPrice")}'
-        await telegram_send_markdown(text)
-        await _mail('Новый заказ', json.dumps(body, ensure_ascii=False, default=str), ['info@whalestore.ru'])
-        return Response({'message': 'Order email sent successfully'})
-
-
-@extend_schema(tags=['Заказы'])
-class ProductOrder3View(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        summary='Заказ одной позиции для авторизованного пользователя',
-        description='userId в пути. Создаётся Order и письмо на email пользователя.',
-        request=REQ_ORDER_ONE,
-    )
-    async def post(self, request, user_id: str):
-        body = dict(request.data)
-        user = await sync_to_async(lambda: StoreUser.objects.filter(pk=user_id).first())()
-        if not user:
-            raise NotFound('Пользователь не найден')
-        product = body.get('product')
-        total = int(body.get('totalPrice') or 0)
-        order = await sync_to_async(
-            lambda: StoreOrder.objects.create(user_id=user_id, products=[product], total_sum=total)
-        )()
-        await _mail('Подтверждение заказа', str(product), [user.email])
-        return Response({'id': str(order.id)})
-
-
-@extend_schema(tags=['Заказы'])
-class ProductQuickOrderView(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        summary='Быстрый заказ без регистрации',
-        description=(
-            'Письмо с данными на указанный email. Ответ 204 без тела при успехе.'
-        ),
-        request=REQ_QUICK_ORDER,
-    )
-    async def post(self, request):
-        body = dict(request.data)
-        await _mail('Быстрый заказ', json.dumps(body, ensure_ascii=False, default=str), [body.get('email')])
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=['Товары — Витрина'])

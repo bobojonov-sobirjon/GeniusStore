@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from asgiref.sync import sync_to_async
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -9,6 +9,8 @@ from apps.common.views import APIView
 
 from apps.common.authentication import AdminBearerAuthentication, CookieJWTAuthentication, StoreAdminPrincipal, StoreUserPrincipal
 from apps.common.integrations.telegram import telegram_send_markdown
+from apps.common.openapi_requests import REQ_CART_ADD, REQ_CART_PATCH, REQ_ORDER_CREATE, RES_CART, RES_ORDER
+from apps.storefront import order_sync as orders
 from apps.storefront import storefront_sync as sf
 from apps.storefront.models import Review
 
@@ -77,6 +79,7 @@ class CartRootView(APIView):
     @extend_schema(
         summary='Содержимое корзины',
         description='Список позиций с количеством, суммой по строке и общим `totalPrice`.',
+        responses={200: RES_CART},
     )
     async def get(self, request):
         uid = _require_user(request)
@@ -85,6 +88,8 @@ class CartRootView(APIView):
     @extend_schema(
         summary='Добавить в корзину',
         description='JSON: `variantId`, опционально `quantity` (по умолчанию 1). Если позиция уже есть — количество увеличивается.',
+        request=REQ_CART_ADD,
+        responses={200: RES_CART},
     )
     async def post(self, request):
         uid = _require_user(request)
@@ -103,6 +108,7 @@ class CartRootView(APIView):
     @extend_schema(
         summary='Очистить корзину',
         description='Удаляет все позиции пользователя.',
+        responses={200: RES_CART},
     )
     async def delete(self, request):
         uid = _require_user(request)
@@ -117,6 +123,8 @@ class CartItemView(APIView):
     @extend_schema(
         summary='Изменить количество',
         description='PATCH JSON: `quantity` (>= 1).',
+        request=REQ_CART_PATCH,
+        responses={200: RES_CART},
     )
     async def patch(self, request, variant_id: str):
         uid = _require_user(request)
@@ -132,10 +140,70 @@ class CartItemView(APIView):
     @extend_schema(
         summary='Удалить позицию из корзины',
         description='UUID варианта в пути.',
+        responses={200: RES_CART},
     )
     async def delete(self, request, variant_id: str):
         uid = _require_user(request)
         return Response(await sync_to_async(sf.remove_cart_item)(uid, str(variant_id)))
+
+
+@extend_schema(tags=['Заказы'])
+class OrderRootView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='Мои заказы',
+        description='Возвращает массив заказов текущего пользователя (cookie `access_token`).',
+        responses={
+            200: OpenApiResponse(
+                response=RES_ORDER,
+                description='Массив объектов OrderResponse',
+            ),
+        },
+    )
+    async def get(self, request):
+        uid = _require_user(request)
+        data = await sync_to_async(orders.list_orders)(uid)
+        return Response(data)
+
+    @extend_schema(
+        summary='Оформить заказ',
+        description=(
+            'Создаёт заказ для текущего пользователя. '
+            '`product_id` — UUID варианта товара (ProductVariant) или числовой id товара. '
+            'Способ получения: `isDelivery` / `isPickup`.'
+        ),
+        request=REQ_ORDER_CREATE,
+        responses={201: RES_ORDER},
+    )
+    async def post(self, request):
+        uid = _require_user(request)
+        try:
+            row = await sync_to_async(orders.create_order)(uid, dict(request.data))
+        except LookupError as e:
+            raise NotFound(str(e)) from e
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
+        return Response(row, status=201)
+
+
+@extend_schema(tags=['Заказы'])
+class OrderDetailView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='Заказ по id',
+        description='Только свой заказ (UUID).',
+        responses={200: RES_ORDER},
+    )
+    async def get(self, request, pk: str):
+        uid = _require_user(request)
+        row = await sync_to_async(orders.get_order)(uid, str(pk))
+        if not row:
+            raise NotFound()
+        return Response(row)
 
 
 @extend_schema(tags=['Отзывы'])

@@ -437,47 +437,122 @@ REQ_REPAIR_FORM = inline_serializer(
     },
 )
 
-REQ_ORDER_USER = inline_serializer(
-    name='OrderWithUserRequest',
+REQ_ORDER_PRODUCT_LINE = inline_serializer(
+    name='OrderCreateProductLine',
     fields={
-        'products': serializers.JSONField(help_text='Массив позиций заказа'),
-        'totalPrice': serializers.IntegerField(),
-        'fio': serializers.CharField(required=False, allow_blank=True),
-        'email': serializers.EmailField(required=False, allow_null=True),
-        'phone': serializers.CharField(required=False, allow_blank=True),
-        'address': serializers.CharField(required=False, allow_blank=True),
-        'deltype': serializers.CharField(required=False, allow_blank=True),
+        'product_id': serializers.CharField(help_text='UUID варианта (ProductVariant)'),
+        'quantity': serializers.IntegerField(help_text='Количество, >= 1'),
     },
 )
 
-REQ_ORDER_CART = inline_serializer(
-    name='OrderCartRequest',
+REQ_ORDER_CREATE = inline_serializer(
+    name='OrderCreateRequest',
     fields={
-        'products': serializers.JSONField(required=False),
-        'totalPrice': serializers.IntegerField(required=False),
-        'fio': serializers.CharField(required=False, allow_blank=True),
-        'phone': serializers.CharField(required=False, allow_blank=True),
-        'email': serializers.EmailField(required=False, allow_null=True),
+        'products_list': serializers.ListField(
+            child=REQ_ORDER_PRODUCT_LINE,
+            help_text='Список позиций заказа',
+        ),
+        'isDelivery': serializers.BooleanField(required=False, help_text='Доставка'),
+        'isPickup': serializers.BooleanField(required=False, help_text='Самовывоз'),
+        'apartment': serializers.CharField(required=False, allow_blank=True, help_text='Квартира'),
+        'entrance': serializers.CharField(required=False, allow_blank=True, help_text='Подъезд'),
+        'floor': serializers.CharField(required=False, allow_blank=True, help_text='Этаж'),
     },
 )
 
-REQ_ORDER_ONE = inline_serializer(
-    name='OrderOneItemRequest',
+RES_ORDER_LINE = inline_serializer(
+    name='OrderProductLine',
     fields={
-        'product': serializers.JSONField(help_text='Объект одной позиции корзины'),
-        'totalPrice': serializers.IntegerField(),
+        'product_id': serializers.CharField(help_text='UUID варианта (ProductVariant)'),
+        'productId': serializers.IntegerField(help_text='ID товара (Product)'),
+        'title': serializers.CharField(),
+        'slug': serializers.CharField(),
+        'quantity': serializers.IntegerField(),
+        'unitPrice': serializers.IntegerField(),
+        'lineTotal': serializers.IntegerField(),
+        'image': serializers.CharField(allow_null=True),
     },
 )
 
-REQ_QUICK_ORDER = inline_serializer(
-    name='QuickOrderRequest',
+RES_ORDER = inline_serializer(
+    name='OrderResponse',
     fields={
-        'product': serializers.JSONField(),
+        'id': serializers.CharField(),
+        'userId': serializers.CharField(allow_null=True),
         'totalPrice': serializers.IntegerField(),
-        'fio': serializers.CharField(required=False, allow_blank=True),
-        'phone': serializers.CharField(required=False, allow_blank=True),
-        'email': serializers.EmailField(),
-        'memory': serializers.CharField(required=False, allow_blank=True),
-        'color': serializers.CharField(required=False, allow_blank=True),
+        'isDelivery': serializers.BooleanField(),
+        'isPickup': serializers.BooleanField(),
+        'deliveryType': serializers.CharField(),
+        'apartment': serializers.CharField(),
+        'entrance': serializers.CharField(),
+        'floor': serializers.CharField(),
+        'products_list': serializers.ListField(child=RES_ORDER_LINE),
+        'createdAt': serializers.CharField(),
+        'updatedAt': serializers.CharField(),
+    },
+)
+
+# --- Корзина ---
+REQ_CART_ADD = inline_serializer(
+    name='CartAddRequest',
+    fields={
+        'variantId': serializers.CharField(help_text='UUID варианта ProductVariant'),
+        'quantity': serializers.IntegerField(required=False, default=1, help_text='По умолчанию 1'),
+    },
+)
+
+REQ_CART_PATCH = inline_serializer(
+    name='CartPatchRequest',
+    fields={
+        'quantity': serializers.IntegerField(help_text='Новое количество (>= 1)'),
+    },
+)
+
+RES_CART_NAMED = inline_serializer(
+    name='CartNamedEntity',
+    fields={
+        'id': serializers.IntegerField(required=False),
+        'name': serializers.CharField(),
+        'slug': serializers.CharField(required=False),
+        'hex': serializers.CharField(required=False),
+    },
+)
+
+RES_CART_PRODUCT = inline_serializer(
+    name='CartProductCard',
+    fields={
+        'variantId': serializers.CharField(),
+        'productId': serializers.IntegerField(),
+        'title': serializers.CharField(),
+        'slug': serializers.CharField(),
+        'price': serializers.IntegerField(),
+        'oldPrice': serializers.IntegerField(allow_null=True),
+        'discount': serializers.IntegerField(allow_null=True),
+        'isAvailable': serializers.BooleanField(),
+        'image': serializers.CharField(allow_null=True, help_text='Полный URL изображения'),
+        'memory': RES_CART_NAMED,
+        'color': RES_CART_NAMED,
+        'brand': RES_CART_NAMED,
+        'category': RES_CART_NAMED,
+    },
+)
+
+RES_CART_ITEM = inline_serializer(
+    name='CartItemResponse',
+    fields={
+        'id': serializers.CharField(help_text='UUID позиции корзины'),
+        'variantId': serializers.CharField(help_text='UUID варианта'),
+        'quantity': serializers.IntegerField(),
+        'lineTotal': serializers.IntegerField(help_text='price * quantity'),
+        'product': RES_CART_PRODUCT,
+    },
+)
+
+RES_CART = inline_serializer(
+    name='CartResponse',
+    fields={
+        'items': serializers.ListField(child=RES_CART_ITEM),
+        'totalPrice': serializers.IntegerField(help_text='Сумма всех lineTotal'),
+        'count': serializers.IntegerField(help_text='Количество позиций (для badge)'),
     },
 )

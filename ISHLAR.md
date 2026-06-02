@@ -157,6 +157,52 @@ PUBLIC_MEDIA_BASE_URL=https://admin.geniusstorerf.ru
 
 **Javob maydonlari:** `id`, `authorName`, `videoUrl`, `thumbnail`, `rating`, `createdAt`
 
+### «Новости» — yangiliklar bloki (asosiy sahifa)
+
+Swagger’da **«Блог — Статьи»** tag ostida. Alohida `/api/news` modeli yo‘q — bu **Blog** API.
+
+| UI | Method | Endpoint | Auth |
+|----|--------|----------|------|
+| 4 ta kartochka (asosiy sahifa) | GET | `/api/blog/all/1/4` yoki `/api/news/all/1/4` | Yo‘q |
+| «Все новости →» sahifasi | GET | `/api/blog/all/{page}/{limit}` | Yo‘q |
+| Yangilik ochish (slug) | GET | `/api/blog/slug/{slug}` yoki `/api/news/slug/{slug}` | Yo‘q |
+| UUID bo‘yicha | GET | `/api/blog/{uuid}` yoki `/api/news/{uuid}` | Yo‘q |
+| «Другие новости» (batafsil sahifa) | GET | `/api/blog/slug/{slug}/related?limit=3` | Yo‘q |
+
+**Kartochka uchun kerakli maydonlar** (`data[]` ichida):
+
+| Maydon | UI |
+|--------|-----|
+| `title` | Sarlavha |
+| `image` | Rasm (to‘liq URL) |
+| `createdAt` | Sana — frontend `23.02.2026` formatiga o‘tkazadi |
+| `slug` | Havola: `/news/{slug}` |
+| `id` | UUID |
+
+**Misol:**
+
+```
+GET https://admin.geniusstorerf.ru/api/news/all/1/4
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "6806cbca-a46f-4782-a3ce-64fd149b822e",
+      "title": "Новый iPhone уже в продаже",
+      "slug": "novyy-iphone-uzhe-v-prodazhe",
+      "image": "https://admin.geniusstorerf.ru/media/uploads/image/...",
+      "createdAt": "2026-02-23T10:00:00Z",
+      "content": "...",
+      "blogCategoryId": "...",
+      "blogSteps": []
+    }
+  ],
+  "count": 12
+}
+```
+
 ### Korzinka — karzinka (5-rasm)
 
 | Method | Endpoint | Body | Auth |
@@ -166,6 +212,34 @@ PUBLIC_MEDIA_BASE_URL=https://admin.geniusstorerf.ru
 | PATCH | `/api/cart/{variant_id}` | `{"quantity": 2}` | Cookie |
 | DELETE | `/api/cart/{variant_id}` | — | Cookie |
 | DELETE | `/api/cart` | — | Cookie (tozalash) |
+
+### Buyurtma (Order) — yangi soddalashtirilgan API
+
+Eski `send-order2/3/4`, `quick-order` **o‘chirildi**.
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | `/api/order` | Cookie `access_token` |
+| GET | `/api/order` | Cookie — faqat o‘z buyurtmalari |
+| GET | `/api/order/{uuid}` | Cookie — faqat o‘z buyurtmasi |
+
+**POST body:**
+```json
+{
+  "products_list": [
+    { "product_id": "variant-uuid", "quantity": 2 }
+  ],
+  "isDelivery": true,
+  "isPickup": false,
+  "apartment": "12",
+  "entrance": "2",
+  "floor": "5"
+}
+```
+
+**Response:** `id`, `totalPrice`, `isDelivery`, `isPickup`, `products_list[]`, `apartment`, `entrance`, `floor`
+
+Admin: **Заказы** — pozitsiyalar inline jadvalda.
 
 **403 sababi:** Login qilinmagan. Swagger’da cookie bo‘lmasa `"Учетные данные не были предоставлены."` — bu normal.
 

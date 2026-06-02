@@ -422,9 +422,23 @@ class ProductVariantSimType(PrismaModel):
 
 
 class StoreOrder(PrismaModel):
+    class DeliveryType(models.TextChoices):
+        DELIVERY = 'delivery', 'Доставка'
+        PICKUP = 'pickup', 'Самовывоз'
+
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
-    products = models.JSONField('Товары (JSON)')
+    products = models.JSONField('Товары (JSON, legacy)', null=True, blank=True, default=list)
     total_sum = models.IntegerField('Сумма', db_column='totalSum')
+    delivery_type = models.CharField(
+        'Способ получения',
+        max_length=16,
+        choices=DeliveryType.choices,
+        db_column='deliveryType',
+        default=DeliveryType.DELIVERY,
+    )
+    apartment = models.CharField('Квартира', max_length=64, blank=True, default='')
+    entrance = models.CharField('Подъезд', max_length=64, blank=True, default='')
+    floor = models.CharField('Этаж', max_length=64, blank=True, default='')
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
     user = models.ForeignKey(
@@ -445,6 +459,45 @@ class StoreOrder(PrismaModel):
 
     def __str__(self) -> str:
         return f'Заказ {str(self.id)[:8]}… — {self.total_sum}'
+
+    @property
+    def is_delivery(self) -> bool:
+        return self.delivery_type == self.DeliveryType.DELIVERY
+
+    @property
+    def is_pickup(self) -> bool:
+        return self.delivery_type == self.DeliveryType.PICKUP
+
+
+class OrderItem(PrismaModel):
+    id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey(
+        StoreOrder,
+        verbose_name='Заказ',
+        db_column='orderId',
+        on_delete=models.CASCADE,
+        related_name='items',
+    )
+    product_variant = models.ForeignKey(
+        ProductVariant,
+        verbose_name='Вариант товара',
+        db_column='productVariantId',
+        on_delete=models.RESTRICT,
+        related_name='order_items',
+    )
+    quantity = models.PositiveIntegerField('Количество', default=1)
+    unit_price = models.IntegerField('Цена за единицу', db_column='unitPrice')
+    line_total = models.IntegerField('Сумма строки', db_column='lineTotal')
+    created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
+
+    class Meta:
+        db_table = 'OrderItem'
+        verbose_name = 'Позиция заказа'
+        verbose_name_plural = 'Позиции заказа'
+        ordering = ('created_at',)
+
+    def __str__(self) -> str:
+        return f'{self.product_variant_id} × {self.quantity}'
 
 
 class ServiceBrand(PrismaModel):

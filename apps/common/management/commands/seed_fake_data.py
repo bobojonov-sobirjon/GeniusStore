@@ -355,27 +355,41 @@ class Command(BaseCommand):
                 )
 
     def _seed_orders(self, variants: list[ProductVariant]) -> None:
+        from apps.store_core.models import OrderItem, StoreOrder
+
         users = list(StoreUser.objects.all()[:5])
         if not users or not variants:
             return
         for idx, user in enumerate(users):
             picked = variants[idx * 2:(idx * 2) + 2] or variants[:2]
             total = int(sum(v.price for v in picked))
-            StoreOrder.objects.get_or_create(
+            order, created = StoreOrder.objects.get_or_create(
                 user=user,
                 total_sum=total,
+                delivery_type=StoreOrder.DeliveryType.DELIVERY if idx % 2 == 0 else StoreOrder.DeliveryType.PICKUP,
                 defaults={
-                    'products': [
-                        {
-                            'variantId': str(v.id),
-                            'title': v.product.title,
-                            'qty': 1,
-                            'price': v.price,
-                        }
-                        for v in picked
-                    ],
+                    'apartment': '12',
+                    'entrance': '2',
+                    'floor': '5',
+                    'products': [],
                 },
             )
+            if not created or order.items.exists():
+                continue
+            running = 0
+            for v in picked:
+                line = int(v.price)
+                OrderItem.objects.create(
+                    order=order,
+                    product_variant=v,
+                    quantity=1,
+                    unit_price=int(v.price),
+                    line_total=line,
+                )
+                running += line
+            if order.total_sum != running:
+                order.total_sum = running
+                order.save(update_fields=['total_sum'])
 
     def _seed_blog(self) -> None:
         categories = ['Новинки', 'Обзоры техники', 'Гайды и советы']
