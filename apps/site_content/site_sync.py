@@ -5,7 +5,10 @@ import uuid
 from django.utils import timezone
 
 from apps.common.file_storage import save_upload_file
+from apps.common.media_urls import serialize_values_list, serialize_values_row
 from apps.store_core.models import Banner, Info
+
+BANNER_MEDIA_FIELDS = ('img_pc', 'img_mobile')
 
 
 def banner_create(data: dict, img_pc, img_mobile) -> Banner:
@@ -24,11 +27,13 @@ def banner_create(data: dict, img_pc, img_mobile) -> Banner:
 
 
 def banner_list():
-    return list(Banner.objects.order_by('-created_at').values())
+    rows = list(Banner.objects.order_by('-created_at').values())
+    return serialize_values_list(rows, media_fields=BANNER_MEDIA_FIELDS)
 
 
 def banner_one(pk: str):
-    return Banner.objects.filter(pk=pk).values().first()
+    row = Banner.objects.filter(pk=pk).values().first()
+    return serialize_values_row(row, media_fields=BANNER_MEDIA_FIELDS)
 
 
 def banner_update(pk: str, data: dict, img_pc, img_mobile) -> dict:
@@ -59,11 +64,11 @@ def info_create(data: dict) -> Info:
 
 
 def info_list():
-    return list(Info.objects.order_by('-created_at').values())
+    return serialize_values_list(list(Info.objects.order_by('-created_at').values()))
 
 
 def info_one(pk: str):
-    return Info.objects.filter(pk=pk).values().first()
+    return serialize_values_row(Info.objects.filter(pk=pk).values().first())
 
 
 def info_update(pk: str, data: dict) -> dict:

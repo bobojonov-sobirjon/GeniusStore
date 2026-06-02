@@ -5,6 +5,7 @@ from typing import Any
 from django.db.models import Q
 
 from apps.catalog.serialization import product_to_dict, variant_to_dict
+from apps.common.media_urls import media_url
 from apps.store_core.models import Category, Product, ProductModel, ProductVariant
 from apps.storefront.models import CartItem, Favorite, Review, SiteSettings
 
@@ -54,7 +55,7 @@ def variant_card(v: ProductVariant) -> dict[str, Any]:
         'oldPrice': v.old_price,
         'discount': v.discount,
         'isAvailable': v.is_available,
-        'image': _first_image(v.images),
+        'image': media_url(_first_image(v.images)),
         'memory': {'id': v.memory_id, 'name': v.memory.name},
         'color': {'id': v.color_id, 'name': v.color.name, 'hex': v.color.hex},
         'brand': {'id': p.brand_id, 'name': p.brand.name},
@@ -168,7 +169,7 @@ def list_reviews(page: int, limit: int, source: str | None = None) -> dict:
             'text': r.text,
             'rating': r.rating,
             'source': r.source,
-            'createdAt': r.created_at,
+            'createdAt': r.created_at.isoformat() if r.created_at else None,
         }
         for r in rows
     ]
@@ -184,10 +185,10 @@ def list_video_reviews(page: int, limit: int) -> dict:
             'id': str(r.id),
             'authorName': r.author_name,
             'videoUrl': r.video_url,
-            'thumbnail': r.thumbnail,
+            'thumbnail': media_url(r.thumbnail),
             'rating': r.rating,
             'source': r.source,
-            'createdAt': r.created_at,
+            'createdAt': r.created_at.isoformat() if r.created_at else None,
         }
         for r in rows
     ]
@@ -230,14 +231,30 @@ def delete_review(pk: str) -> None:
 
 def get_site_settings() -> dict[str, Any]:
     row, _ = SiteSettings.objects.get_or_create(pk=1)
-    categories = list(
-        Category.objects.order_by('name').values('id', 'name', 'slug', 'icon')
-    )
+    categories = []
+    for cat in Category.objects.order_by('name').values('id', 'name', 'slug', 'icon'):
+        categories.append(
+            {
+                'id': cat['id'],
+                'name': cat['name'],
+                'slug': cat['slug'],
+                'icon': media_url(cat['icon']),
+            }
+        )
     brands = list(
         Product.objects.values_list('brand__name', flat=True)
         .distinct()
         .order_by('brand__name')[:20]
     )
+    popular = list(
+        Product.objects.filter(is_hit=True)
+        .order_by('-created_at')
+        .values_list('title', flat=True)[:8]
+    )
+    if not popular:
+        popular = list(
+            Product.objects.order_by('-created_at').values_list('title', flat=True)[:8]
+        )
     advantages = row.advantages if row.advantages else DEFAULT_ADVANTAGES
     return {
         'phone': row.phone,
@@ -252,7 +269,8 @@ def get_site_settings() -> dict[str, Any]:
         'advantages': advantages,
         'categories': categories,
         'brands': [b for b in brands if b],
-        'updatedAt': row.updated_at,
+        'popularSearches': [t for t in popular if t],
+        'updatedAt': row.updated_at.isoformat() if row.updated_at else None,
     }
 
 
@@ -323,8 +341,8 @@ def related_blogs(slug: str, limit: int = 3) -> list[dict]:
             'id': str(b.id),
             'title': b.title,
             'slug': b.slug,
-            'image': b.image,
-            'createdAt': b.created_at,
+            'image': media_url(b.image),
+            'createdAt': b.created_at.isoformat() if b.created_at else None,
         }
         for b in rows
     ]

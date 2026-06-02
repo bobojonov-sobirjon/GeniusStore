@@ -5,8 +5,11 @@ import uuid
 from django.utils import timezone
 
 from apps.common.file_storage import save_upload_file
+from apps.common.media_urls import media_url, serialize_values_list, serialize_values_row
 from apps.common.slugify_store import generate_slug
 from apps.store_core.models import Service, ServiceBrand, ServiceModel
+
+BRAND_MEDIA_FIELDS = ('image',)
 
 
 def brand_create(data: dict, image) -> ServiceBrand:
@@ -21,48 +24,51 @@ def brand_create(data: dict, image) -> ServiceBrand:
     )
 
 
+def _brand_payload(b: ServiceBrand, include_models: bool = False) -> dict:
+    out = {
+        'id': str(b.id),
+        'name': b.name,
+        'slug': b.slug,
+        'image': media_url(b.image),
+        'createdAt': b.created_at.isoformat() if b.created_at else None,
+        'updatedAt': b.updated_at.isoformat() if b.updated_at else None,
+    }
+    if include_models:
+        out['models'] = serialize_values_list(list(b.models.values()))
+    return out
+
+
 def brand_page(page: int, limit: int):
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     qs = ServiceBrand.objects.order_by('created_at')[(page - 1) * limit : page * limit]
-    return {'data': list(qs.values()), 'count': ServiceBrand.objects.count()}
+    data = [_brand_payload(b) for b in qs]
+    return {'data': data, 'count': ServiceBrand.objects.count()}
 
 
 def brand_by_model():
-    data = []
-    for b in ServiceBrand.objects.prefetch_related('models').order_by('created_at'):
-        data.append(
-            {
-                'id': str(b.id),
-                'name': b.name,
-                'slug': b.slug,
-                'image': b.image,
-                'models': list(b.models.values()),
-            }
-        )
-    return data
+    return [_brand_payload(b, include_models=True) for b in ServiceBrand.objects.prefetch_related('models').order_by('created_at')]
 
 
 def brand_models(id_: str):
     b = ServiceBrand.objects.prefetch_related('models').filter(pk=id_).first()
     if not b:
         return None
-    return {
-        'id': str(b.id),
-        'name': b.name,
-        'slug': b.slug,
-        'image': b.image,
-        'models': list(b.models.values()),
-    }
+    return _brand_payload(b, include_models=True)
 
 
 def brand_by_slug_models(slug: str):
     b = ServiceBrand.objects.prefetch_related('models').filter(slug=slug).first()
     if not b:
         return None
-    return brand_models(str(b.id))
+    return _brand_payload(b, include_models=True)
 
 
 def brand_one(id_: str):
-    return ServiceBrand.objects.filter(pk=id_).values().first()
+    b = ServiceBrand.objects.filter(pk=id_).first()
+    if not b:
+        return None
+    return _brand_payload(b)
 
 
 def brand_update(id_: str, data: dict, image) -> dict:
@@ -91,12 +97,17 @@ def sm_create(data: dict) -> ServiceModel:
 
 
 def sm_page(page: int, limit: int):
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     qs = ServiceModel.objects.order_by('created_at')[(page - 1) * limit : page * limit]
-    return {'data': list(qs.values()), 'count': ServiceModel.objects.count()}
+    return {
+        'data': serialize_values_list(list(qs.values())),
+        'count': ServiceModel.objects.count(),
+    }
 
 
 def sm_one(id_: str):
-    return ServiceModel.objects.filter(pk=id_).values().first()
+    return serialize_values_row(ServiceModel.objects.filter(pk=id_).values().first())
 
 
 def sm_by_slug(slug: str):
@@ -108,9 +119,9 @@ def sm_by_slug(slug: str):
         'name': m.name,
         'slug': m.slug,
         'serviceBrandId': str(m.service_brand_id) if m.service_brand_id else None,
-        'createdAt': m.created_at,
-        'updatedAt': m.updated_at,
-        'services': list(m.services.values()),
+        'createdAt': m.created_at.isoformat() if m.created_at else None,
+        'updatedAt': m.updated_at.isoformat() if m.updated_at else None,
+        'services': serialize_values_list(list(m.services.values())),
     }
 
 
@@ -140,12 +151,17 @@ def svc_create(data: dict) -> Service:
 
 
 def svc_page(page: int, limit: int):
+    page = max(1, int(page))
+    limit = max(1, min(int(limit), 100))
     qs = Service.objects.order_by('created_at')[(page - 1) * limit : page * limit]
-    return {'data': list(qs.values()), 'count': Service.objects.count()}
+    return {
+        'data': serialize_values_list(list(qs.values())),
+        'count': Service.objects.count(),
+    }
 
 
 def svc_one(id_: str):
-    return Service.objects.filter(pk=id_).select_related('service_model').values().first()
+    return serialize_values_row(Service.objects.filter(pk=id_).select_related('service_model').values().first())
 
 
 def svc_by_slug(slug: str):
@@ -159,11 +175,15 @@ def svc_by_slug(slug: str):
         'laborOnly': s.labor_only,
         'laborWithPart': s.labor_with_part,
         'serviceModelId': str(s.service_model_id) if s.service_model_id else None,
-        'createdAt': s.created_at,
-        'updatedAt': s.updated_at,
+        'createdAt': s.created_at.isoformat() if s.created_at else None,
+        'updatedAt': s.updated_at.isoformat() if s.updated_at else None,
     }
     if s.service_model:
-        out['serviceModel'] = {'id': str(s.service_model.id), 'name': s.service_model.name, 'slug': s.service_model.slug}
+        out['serviceModel'] = {
+            'id': str(s.service_model.id),
+            'name': s.service_model.name,
+            'slug': s.service_model.slug,
+        }
     return out
 
 
