@@ -34,6 +34,26 @@ def media_url(path: str | None, request=None) -> str | None:
     return normalized
 
 
+def media_url_images(images: Any, request=None) -> list[Any]:
+    """Normalize product variant image list: full URLs in url/path/src fields."""
+    if not images or not isinstance(images, list):
+        return []
+    out: list[Any] = []
+    for img in images:
+        if isinstance(img, str):
+            out.append(media_url(img, request))
+            continue
+        if isinstance(img, dict):
+            item = dict(img)
+            for key in ('url', 'path', 'src'):
+                if item.get(key):
+                    item[key] = media_url(str(item[key]), request)
+            out.append(item)
+            continue
+        out.append(img)
+    return out
+
+
 def media_url_fields(data: dict[str, Any], fields: tuple[str, ...], request=None) -> dict[str, Any]:
     out = dict(data)
     for field in fields:

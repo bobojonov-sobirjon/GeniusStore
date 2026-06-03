@@ -5,6 +5,7 @@ from typing import Any
 
 from django.db.models import Prefetch
 
+from apps.common.media_urls import media_url_images
 from apps.store_core.models import Product, ProductVariant, ProductVariantSimType
 
 
@@ -40,7 +41,7 @@ def variant_to_dict(v: ProductVariant) -> dict[str, Any]:
         'isAvailable': v.is_available,
         'description': v.description,
         'colorId': v.color_id,
-        'images': v.images if v.images is not None else [],
+        'images': media_url_images(v.images),
         'diagonal': v.diagonal,
         'size': v.size,
         'createdAt': v.created_at,
