@@ -8,7 +8,9 @@ from apps.catalog.serialization import product_to_dict
 from apps.store_core.models import (
     Brand,
     Category,
+    Color,
     Condition,
+    Memory,
     Product,
     ProductModel,
     ProductVariant,
@@ -68,6 +70,8 @@ def get_filter_data(slug: str, model_id: int | None, brand_id: int | None) -> di
             'condition': [],
             'model': [],
             'simType': [],
+            'memory': [],
+            'color': [],
             'availableCount': 0,
         }
     cid = category['id']
@@ -124,12 +128,34 @@ def get_filter_data(slug: str, model_id: int | None, brand_id: int | None) -> di
     for s in SimType.objects.annotate(count=Count('variants_single')).order_by('id'):
         sim_types.append({'id': str(s.id), 'name': s.name, 'count': s.count})
 
+    memories = []
+    mem_qs = Memory.objects.filter(variants__product__category_id=cid).distinct().order_by('name')
+    if scoped_brand_ids:
+        mem_qs = mem_qs.filter(variants__product__brand_id__in=scoped_brand_ids)
+    for mem in mem_qs:
+        vq = ProductVariant.objects.filter(memory=mem, product__category_id=cid)
+        if scoped_brand_ids:
+            vq = vq.filter(product__brand_id__in=scoped_brand_ids)
+        memories.append({'id': mem.id, 'name': mem.name, 'createdAt': mem.created_at, 'count': vq.count()})
+
+    color_rows = []
+    col_qs = Color.objects.filter(variants__product__category_id=cid).distinct().order_by('name')
+    if scoped_brand_ids:
+        col_qs = col_qs.filter(variants__product__brand_id__in=scoped_brand_ids)
+    for col in col_qs:
+        vq = ProductVariant.objects.filter(color=col, product__category_id=cid)
+        if scoped_brand_ids:
+            vq = vq.filter(product__brand_id__in=scoped_brand_ids)
+        color_rows.append({'id': col.id, 'name': col.name, 'hex': col.hex, 'count': vq.count()})
+
     return {
         'category': categories,
         'brand': brands,
         'condition': conditions,
         'model': models,
         'simType': sim_types,
+        'memory': memories,
+        'color': color_rows,
         'availableCount': available_count,
     }
 
@@ -157,17 +183,29 @@ def _variant_matches_sim_types(v: ProductVariant, sim_types: list[Any]) -> bool:
     return True
 
 
+def _body_list(body: dict, *keys: str) -> list[Any]:
+    for key in keys:
+        val = body.get(key)
+        if val is None or val == '':
+            continue
+        if isinstance(val, list):
+            return val
+        return [val]
+    return []
+
+
 def filter_products(body: dict) -> list[dict]:
     slug = body.get('slug')
-    brands = body.get('brands') or []
-    conditions = body.get('conditions') or []
-    models = body.get('models') or []
-    colors = body.get('colors') or []
+    brands = _body_list(body, 'brands', 'brandIds', 'brandId')
+    conditions = _body_list(body, 'conditions', 'conditionIds', 'conditionId')
+    models = _body_list(body, 'models', 'modelIds', 'modelId')
+    colors = _body_list(body, 'colors', 'colorIds', 'colorId')
+    memories = _body_list(body, 'memories', 'memoryIds', 'memoryId', 'memory')
     min_price = body.get('minPrice')
     max_price = body.get('maxPrice')
     in_stock = body.get('inStock')
     category_id = body.get('categoryId')
-    sim_types = body.get('simTypes') or []
+    sim_types = _body_list(body, 'simTypes', 'simTypeIds', 'simTypeId')
     is_bt = body.get('isBt')
     is_all = body.get('isAll')
 
@@ -198,6 +236,8 @@ def filter_products(body: dict) -> list[dict]:
     products = list(pq.filter(q).order_by('-created_at'))
 
     def variant_ok(v: ProductVariant) -> bool:
+        if is_all is not True and memories and v.memory_id not in [int(x) for x in memories]:
+            return False
         if is_all is not True and colors and v.color_id not in [int(x) for x in colors]:
             return False
         if is_all is not True and min_price is not None and max_price is not None:
@@ -216,7 +256,8 @@ def filter_products(body: dict) -> list[dict]:
         return True
 
     variant_where_used = bool(
-        (colors and is_all is not True)
+        (memories and is_all is not True)
+        or (colors and is_all is not True)
         or (min_price is not None and is_all is not True)
         or (max_price is not None and is_all is not True)
         or (in_stock and is_all is not True)

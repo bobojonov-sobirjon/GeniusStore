@@ -17,9 +17,10 @@ class FiltrPostView(APIView):
     @extend_schema(
         summary='Фильтрация каталога',
         description=(
-            'POST с телом в формате Nest `filtr`: критерии по категории, бренду, модели, цене, памяти, цвету, '
-            'состоянию, SIM и т.д. Возвращает отфильтрованный список товаров с вариантами. '
-            'Схема ниже — типовые поля; дополнительные ключи Nest также допустимы.'
+            'POST JSON (не query string!). Фильтр по категории + вариантам товара. '
+            'Память: `memoryIds: [1]` или `memoryId: 1` (id из GET /api/memory или filter-data). '
+            'Пример: `{ "slug": "smartphones", "memoryIds": [1], "minPrice": 50000 }`. '
+            'Ответ — массив товаров с отфильтрованными variants.'
         ),
         request=REQ_FILTR_CATALOG,
     )
