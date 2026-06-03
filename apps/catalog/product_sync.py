@@ -272,26 +272,33 @@ def get_product_by_slug(slug: str) -> dict | None:
 def list_products_page(page: int, limit: int) -> dict:
     page = max(1, int(page))
     limit = max(1, min(int(limit), 100))
+    base_qs = Product.objects.all()
+    total = base_qs.count()
     qs = (
-        Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        base_qs.select_related('brand', 'category', 'condition', 'product_model')
         .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     data = [product_to_dict(p, variants=list(p.variants.all())) for p in qs]
-    return {'data': data, 'count': len(data)}
+    return {'data': data, 'count': total, 'page': page, 'limit': limit}
 
 
 def list_products_category_id(page: int, limit: int, category_id: int) -> dict:
     page = max(1, int(page))
     limit = max(1, min(int(limit), 100))
+    base_qs = Product.objects.filter(category_id=category_id)
+    cnt = base_qs.count()
     qs = (
-        Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        base_qs.select_related('brand', 'category', 'condition', 'product_model')
         .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
-        .filter(category_id=category_id)
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
-    cnt = Product.objects.filter(category_id=category_id).count()
-    return {'data': [product_to_dict(p, variants=list(p.variants.all())) for p in qs], 'count': cnt}
+    return {
+        'data': [product_to_dict(p, variants=list(p.variants.all())) for p in qs],
+        'count': cnt,
+        'page': page,
+        'limit': limit,
+    }
 
 
 def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
@@ -300,13 +307,13 @@ def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
     page = max(1, int(page))
     limit = max(1, min(int(limit), 100))
     cat = Category.objects.filter(slug=slug).first()
+    base_qs = Product.objects.filter(category__slug=slug)
+    cnt = base_qs.count()
     qs = (
-        Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        base_qs.select_related('brand', 'category', 'condition', 'product_model')
         .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
-        .filter(category__slug=slug)
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
-    cnt = Product.objects.filter(category__slug=slug).count()
     cat_out = (
         {'id': cat.id, 'name': cat.name, 'slug': cat.slug, 'icon': cat.icon, 'createdAt': cat.created_at}
         if cat
@@ -316,6 +323,8 @@ def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
         'data': [product_to_dict(p, variants=list(p.variants.all())) for p in qs],
         'category': cat_out,
         'count': cnt,
+        'page': page,
+        'limit': limit,
     }
 
 

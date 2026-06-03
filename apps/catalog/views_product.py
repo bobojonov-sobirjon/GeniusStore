@@ -160,7 +160,11 @@ class ProductListPagedView(APIView):
 
     @extend_schema(
         summary='Список всех товаров с пагинацией',
-        description='Параметры пути: `page`, `limit` (1-based страница). Возвращает `{ data, count }`.',
+        description=(
+            'Параметры пути: `page`, `limit` (1-based страница). '
+            'Возвращает `{ data, count, page, limit }`. '
+            '`count` — общее число товаров в базе (не размер текущей страницы).'
+        ),
         responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
     )
     async def get(self, request, page: int, limit: int):
@@ -174,7 +178,11 @@ class ProductByCategorySlugView(APIView):
 
     @extend_schema(
         summary='Товары категории по slug',
-        description='Путь: slug категории, затем page и limit. Ответ включает `data`, `category`, `count` — блок категории для шапки витрины.',
+        description=(
+            'Путь: slug категории, затем page и limit. '
+            'Ответ: `{ data, category, count, page, limit }`. '
+            '`count` — всего товаров в этой категории.'
+        ),
     )
     async def get(self, request, slug: str, page: int, limit: int):
         data = await sync_to_async(product_sync.list_products_category_slug)(int(page), int(limit), slug)
@@ -187,7 +195,11 @@ class ProductByCategoryIdView(APIView):
 
     @extend_schema(
         summary='Товары категории по числовому id',
-        description='Параметры: categoryId, page, limit. Возвращает `{ data, count }` с полными вложениями вариантов.',
+        description=(
+            'Параметры: categoryId, page, limit. '
+            'Возвращает `{ data, count, page, limit }`. '
+            '`count` — всего товаров в категории.'
+        ),
     )
     async def get(self, request, category_id: int, page: int, limit: int):
         data = await sync_to_async(product_sync.list_products_category_id)(int(page), int(limit), int(category_id))
