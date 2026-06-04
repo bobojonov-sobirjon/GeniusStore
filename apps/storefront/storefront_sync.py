@@ -4,7 +4,7 @@ from typing import Any
 
 from django.db.models import Q
 
-from apps.catalog.serialization import product_to_dict, variant_to_dict
+from apps.catalog.serialization import product_gallery_images, product_list_prefetch, product_to_dict, variant_to_dict
 from apps.common.media_urls import media_url
 from apps.store_core.models import Category, Product, ProductModel, ProductVariant
 from apps.storefront.models import CartItem, Favorite, Review, SiteSettings
@@ -55,7 +55,7 @@ def variant_card(v: ProductVariant) -> dict[str, Any]:
         'oldPrice': v.old_price,
         'discount': v.discount,
         'isAvailable': v.is_available,
-        'image': media_url(_first_image(v.images)),
+        'image': media_url(_first_image(product_gallery_images(p) or v.images)),
         'memory': {'id': v.memory_id, 'name': v.memory.name},
         'color': {'id': v.color_id, 'name': v.color.name, 'hex': v.color.hex},
         'brand': {'id': p.brand_id, 'name': p.brand.name},
@@ -321,11 +321,12 @@ def related_products(slug: str, limit: int = 4) -> list[dict]:
         return []
     qs = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(*product_list_prefetch())
         .filter(category_id=product.category_id)
         .exclude(pk=product.pk)
         .order_by('-is_hit', '-created_at')[:limit]
     )
-    return [product_to_dict(p) for p in qs]
+    return [product_to_dict(p, variants=list(p.variants.all())) for p in qs]
 
 
 def related_blogs(slug: str, limit: int = 3) -> list[dict]:

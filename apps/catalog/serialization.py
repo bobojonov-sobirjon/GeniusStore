@@ -5,14 +5,52 @@ from typing import Any
 
 from django.db.models import Prefetch
 
-from apps.common.media_urls import media_url_images
-from apps.store_core.models import Product, ProductVariant, ProductVariantSimType
+from apps.common.media_urls import media_url, media_url_images
+from apps.store_core.models import Product, ProductImage, ProductVariant, ProductVariantSimType
 
 
 def _json_safe(value: Any) -> Any:
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
+
+
+def product_gallery_images(product: Product, request=None) -> list[dict[str, Any]]:
+    """Gallery from admin ProductImage (same files as /admin/ product images tab)."""
+    if (
+        hasattr(product, '_prefetched_objects_cache')
+        and 'product_images' in getattr(product, '_prefetched_objects_cache', {})
+    ):
+        rows = list(product.product_images.all())
+    else:
+        rows = list(product.product_images.order_by('sort_order', '-created_at'))
+    out: list[dict[str, Any]] = []
+    for img in rows:
+        url = media_url(img.image, request)
+        if not url:
+            continue
+        out.append({
+            'id': str(img.id),
+            'url': url,
+            'alt': img.alt or '',
+            'isPrimary': img.is_primary,
+            'sortOrder': img.sort_order,
+        })
+    return out
+
+
+def _resolve_variant_images(
+    v: ProductVariant,
+    *,
+    product: Product | None = None,
+    gallery: list[dict[str, Any]] | None = None,
+    request=None,
+) -> list[Any]:
+    if gallery is None and product is not None:
+        gallery = product_gallery_images(product, request)
+    if gallery:
+        return gallery
+    return media_url_images(v.images, request)
 
 
 def _sim_link_to_dict(link: ProductVariantSimType) -> dict[str, Any]:
@@ -26,11 +64,18 @@ def _sim_link_to_dict(link: ProductVariantSimType) -> dict[str, Any]:
     }
 
 
-def variant_to_dict(v: ProductVariant) -> dict[str, Any]:
+def variant_to_dict(
+    v: ProductVariant,
+    *,
+    product: Product | None = None,
+    gallery: list[dict[str, Any]] | None = None,
+    request=None,
+) -> dict[str, Any]:
     sims = [_sim_link_to_dict(link) for link in v.sim_type_links.all()]
     st = v.sim_type
     memory = getattr(v, 'memory', None)
     color = getattr(v, 'color', None)
+    prod = product or getattr(v, 'product', None)
     return {
         'id': str(v.id),
         'productId': v.product_id,
@@ -41,7 +86,7 @@ def variant_to_dict(v: ProductVariant) -> dict[str, Any]:
         'isAvailable': v.is_available,
         'description': v.description,
         'colorId': v.color_id,
-        'images': media_url_images(v.images),
+        'images': _resolve_variant_images(v, product=prod, gallery=gallery, request=request),
         'diagonal': v.diagonal,
         'size': v.size,
         'createdAt': v.created_at,
@@ -66,9 +111,24 @@ def _variant_qs():
     )
 
 
-def product_to_dict(p: Product, variants: list[ProductVariant] | None = None) -> dict[str, Any]:
+def product_list_prefetch() -> list[Prefetch]:
+    return [
+        Prefetch('variants', queryset=_variant_qs()),
+        Prefetch(
+            'product_images',
+            queryset=ProductImage.objects.order_by('sort_order', '-created_at'),
+        ),
+    ]
+
+
+def product_to_dict(
+    p: Product,
+    variants: list[ProductVariant] | None = None,
+    request=None,
+) -> dict[str, Any]:
     if variants is None:
         variants = list(_variant_qs().filter(product=p))
+    gallery = product_gallery_images(p, request)
     brand = getattr(p, 'brand', None)
     category = getattr(p, 'category', None)
     condition = getattr(p, 'condition', None) if p.condition_id else None
@@ -113,5 +173,8 @@ def product_to_dict(p: Product, variants: list[ProductVariant] | None = None) ->
         } if category else None,
         'condition': {'id': str(condition.id), 'name': condition.name} if condition else None,
         'model': {'id': model.id, 'name': model.name} if model else None,
-        'variants': [variant_to_dict(v) for v in variants],
+        'images': gallery,
+        'variants': [
+            variant_to_dict(v, product=p, gallery=gallery, request=request) for v in variants
+        ],
     }

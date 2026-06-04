@@ -4,6 +4,7 @@ from typing import Any
 
 from django.db import transaction
 
+from apps.catalog.serialization import product_gallery_images
 from apps.common.media_urls import media_url
 from apps.common.uuid_utils import normalize_uuid
 from apps.store_core.models import OrderItem, ProductVariant, StoreOrder
@@ -53,7 +54,7 @@ def _line_payload(item: OrderItem) -> dict[str, Any]:
         'quantity': item.quantity,
         'unitPrice': item.unit_price,
         'lineTotal': item.line_total,
-        'image': media_url(_first_image(v.images)),
+        'image': media_url(_first_image(product_gallery_images(p) or v.images)),
         'memory': {'id': v.memory_id, 'name': v.memory.name} if v.memory_id else None,
         'color': {'id': v.color_id, 'name': v.color.name, 'hex': v.color.hex} if v.color_id else None,
     }

@@ -9,7 +9,12 @@ from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.utils import timezone
 
-from apps.catalog.serialization import _variant_qs, product_to_dict, variant_to_dict
+from apps.catalog.serialization import (
+    _variant_qs,
+    product_list_prefetch,
+    product_to_dict,
+    variant_to_dict,
+)
 from apps.common.file_storage import delete_media_relative, save_upload_file
 from apps.common.media_urls import media_url
 from apps.common.slugify_store import generate_slug
@@ -251,23 +256,25 @@ def delete_product(pid: int) -> None:
 def get_product(pid: int) -> dict | None:
     p = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(*product_list_prefetch())
         .filter(pk=pid)
         .first()
     )
     if not p:
         return None
-    return product_to_dict(p)
+    return product_to_dict(p, variants=list(p.variants.all()))
 
 
 def get_product_by_slug(slug: str) -> dict | None:
     p = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(*product_list_prefetch())
         .filter(slug=slug)
         .first()
     )
     if not p:
         return None
-    return product_to_dict(p)
+    return product_to_dict(p, variants=list(p.variants.all()))
 
 
 def list_products_page(page: int, limit: int) -> dict:
@@ -277,7 +284,7 @@ def list_products_page(page: int, limit: int) -> dict:
     total = base_qs.count()
     qs = (
         base_qs.select_related('brand', 'category', 'condition', 'product_model')
-        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
+        .prefetch_related(*product_list_prefetch())
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     data = [product_to_dict(p, variants=list(p.variants.all())) for p in qs]
@@ -291,7 +298,7 @@ def list_products_category_id(page: int, limit: int, category_id: int) -> dict:
     cnt = base_qs.count()
     qs = (
         base_qs.select_related('brand', 'category', 'condition', 'product_model')
-        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
+        .prefetch_related(*product_list_prefetch())
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     return {
@@ -312,7 +319,7 @@ def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
     cnt = base_qs.count()
     qs = (
         base_qs.select_related('brand', 'category', 'condition', 'product_model')
-        .prefetch_related(Prefetch('variants', queryset=_variant_qs()))
+        .prefetch_related(*product_list_prefetch())
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     cat_out = (
@@ -335,10 +342,11 @@ def search_products(q: str) -> list[dict]:
         return []
     qs = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
+        .prefetch_related(*product_list_prefetch())
         .filter(Q(title__icontains=q) | Q(description__icontains=q))
         .order_by('-created_at')
     )
-    return [product_to_dict(p) for p in qs]
+    return [product_to_dict(p, variants=list(p.variants.all())) for p in qs]
 
 
 @transaction.atomic
@@ -384,7 +392,7 @@ def update_variant(vid: str, dto: dict) -> dict:
         .prefetch_related('sim_type_links__sim_type')
         .get(pk=vid)
     )
-    return variant_to_dict(pv)
+    return variant_to_dict(pv, product=pv.product)
 
 
 def delete_variant(vid: str) -> None:

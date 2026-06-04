@@ -4,7 +4,7 @@ from typing import Any
 
 from django.db.models import Count, Prefetch, Q
 
-from apps.catalog.serialization import product_to_dict
+from apps.catalog.serialization import product_list_prefetch, product_to_dict
 from apps.common.media_urls import media_url
 from apps.store_core.models import (
     Brand,
@@ -48,12 +48,12 @@ def get_best_offers(limit: int = 8) -> dict[str, list]:
     used = Condition.objects.filter(name='Б/у').first()
     used_id = used.id if used else None
     vqs = ProductVariant.objects.select_related('memory')
-    base = Product.objects.select_related('brand', 'product_model', 'category', 'condition').prefetch_related(
-        Prefetch('variants', queryset=vqs)
-    )
+    base = Product.objects.select_related(
+        'brand', 'product_model', 'category', 'condition'
+    ).prefetch_related(*product_list_prefetch())
 
     def pack(qs):
-        return [product_to_dict(p) for p in qs[:limit]]
+        return [product_to_dict(p, variants=list(p.variants.all())) for p in qs[:limit]]
 
     sales = pack(base.order_by('-created_at'))
     hits = pack(base.filter(is_hit=True).order_by('-created_at'))
@@ -210,14 +210,9 @@ def filter_products(body: dict) -> list[dict]:
     is_bt = body.get('isBt')
     is_all = body.get('isAll')
 
-    pq = Product.objects.select_related('brand', 'category', 'condition', 'product_model').prefetch_related(
-        Prefetch(
-            'variants',
-            queryset=ProductVariant.objects.select_related('memory', 'color', 'sim_type').prefetch_related(
-                Prefetch('sim_type_links', queryset=ProductVariantSimType.objects.select_related('sim_type'))
-            ),
-        )
-    )
+    pq = Product.objects.select_related(
+        'brand', 'category', 'condition', 'product_model'
+    ).prefetch_related(*product_list_prefetch())
 
     q = Q()
     if is_bt is not None:
