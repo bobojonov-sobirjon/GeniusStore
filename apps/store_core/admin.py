@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
+from apps.common.media_urls import media_url
 from apps.store_core import models as m
 from apps.store_core.admin_forms import ProductImageForm
 
@@ -153,16 +154,17 @@ class ProductImageInline(admin.TabularInline):
     form = ProductImageForm
     extra = 1
     classes = ('whale-card',)
-    fields = ('preview', 'upload', 'alt', 'sort_order', 'is_primary')
+    fields = ('preview', 'image', 'alt', 'sort_order', 'is_primary')
     readonly_fields = ('preview',)
 
     @admin.display(description='Превью')
     def preview(self, obj):
-        if obj.path:
+        if obj.image:
+            url = media_url(obj.image) or obj.image.url
             return format_html(
-                '<img src="/media/uploads/{}" alt="" '
+                '<img src="{}" alt="" '
                 'style="max-height:56px;max-width:80px;border-radius:8px;object-fit:cover;">',
-                obj.path,
+                url,
             )
         return '—'
 
@@ -220,22 +222,23 @@ class ProductImageAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     form = ProductImageForm
     list_display = ('preview_thumb', 'product', 'alt', 'sort_order', 'is_primary', 'created_at')
     list_filter = ('is_primary', 'product__category', 'product__brand')
-    search_fields = ('product__title', 'product__slug', 'alt', 'path')
+    search_fields = ('product__title', 'product__slug', 'alt')
     autocomplete_fields = ('product',)
     ordering = ('product__title', 'sort_order')
-    readonly_fields = ('preview_thumb', 'path', 'created_at')
+    readonly_fields = ('preview_thumb', 'created_at')
     fields = (
-        'product', 'upload', 'preview_thumb', 'path',
+        'product', 'image', 'preview_thumb',
         'alt', 'sort_order', 'is_primary', 'created_at',
     )
 
     @admin.display(description='Фото')
     def preview_thumb(self, obj):
-        if obj.path:
+        if obj.image:
+            url = media_url(obj.image) or obj.image.url
             return format_html(
-                '<img src="/media/uploads/{}" alt="" '
+                '<img src="{}" alt="" '
                 'style="max-height:120px;max-width:160px;border-radius:10px;object-fit:cover;">',
-                obj.path,
+                url,
             )
         return '—'
 
@@ -361,6 +364,7 @@ class ServiceBrandAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     search_fields = ('name', 'slug')
     ordering = ('name',)
     prepopulated_fields = {'slug': ('name',)}
+    fields = ('name', 'slug', 'image')
     inlines = (ServiceModelInline,)
 
 

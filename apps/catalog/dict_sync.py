@@ -6,7 +6,7 @@ from typing import Any
 from django.db import transaction
 from django.utils import timezone
 
-from apps.common.file_storage import save_upload_file
+from apps.common.media_urls import media_url
 from apps.common.slugify_store import generate_slug
 from apps.store_core.models import Brand, Category, Color, Condition, Memory, ProductModel, SimType
 
@@ -96,9 +96,14 @@ def category_one(pk: int):
 
 
 def category_create(data: dict, icon_file) -> dict:
-    icon_path = save_upload_file('image', icon_file) if icon_file else None
-    c = Category.objects.create(name=data['name'], icon=icon_path)
-    return {'id': c.id, 'name': c.name, 'icon': c.icon, 'slug': c.slug, 'createdAt': c.created_at}
+    c = Category.objects.create(name=data['name'], icon=icon_file)
+    return {
+        'id': c.id,
+        'name': c.name,
+        'icon': media_url(c.icon),
+        'slug': c.slug,
+        'createdAt': c.created_at,
+    }
 
 
 def category_set_slugs() -> str:
@@ -112,11 +117,17 @@ def category_set_slugs() -> str:
 def category_update(pk: int, data: dict, icon_file) -> dict:
     c = Category.objects.get(pk=pk)
     if icon_file:
-        c.icon = save_upload_file('image', icon_file)
+        c.icon = icon_file
     if data.get('name'):
         c.name = data['name']
     c.save()
-    return {'id': c.id, 'name': c.name, 'icon': c.icon, 'slug': c.slug, 'createdAt': c.created_at}
+    return {
+        'id': c.id,
+        'name': c.name,
+        'icon': media_url(c.icon),
+        'slug': c.slug,
+        'createdAt': c.created_at,
+    }
 
 
 def category_delete(pk: int) -> None:

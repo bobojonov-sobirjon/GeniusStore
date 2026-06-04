@@ -8,6 +8,7 @@ import argon2
 from django.core.mail import send_mail
 from django.utils import timezone
 
+from apps.common.media_urls import media_url
 from apps.store_core.models import StoreAdmin, StoreUser
 
 _ph = argon2.PasswordHasher()
@@ -37,19 +38,22 @@ def verify_admin_password(hash_str: str, raw: str) -> bool:
         return False
 
 
-def create_user(data: dict, avatar_path: str | None) -> StoreUser:
+def create_user(data: dict, avatar_file) -> StoreUser:
     if StoreUser.objects.filter(email=data['email']).exists():
         raise ValueError('Пользователь с таким email уже существует')
     pwd = hash_user_password(data['password'])
-    return StoreUser.objects.create(
+    user = StoreUser.objects.create(
         email=data['email'],
         first_name=data.get('firstName') or data.get('first_name'),
         last_name=data.get('lastName') or data.get('last_name'),
         middle_name=data.get('middleName') or data.get('middle_name'),
         phone=data.get('phone'),
         password=pwd,
-        avatar=avatar_path or '',
     )
+    if avatar_file:
+        user.avatar = avatar_file
+        user.save(update_fields=['avatar'])
+    return user
 
 
 def login_user(email: str, password: str) -> StoreUser:
@@ -67,7 +71,7 @@ def list_users_safe():
         rows.append(
             {
                 'id': str(u.id),
-                'avatar': u.avatar,
+                'avatar': media_url(u.avatar),
                 'createdAt': u.created_at,
                 'email': u.email,
                 'firstName': u.first_name,
@@ -87,7 +91,7 @@ def delete_user(pk: str) -> None:
     StoreUser.objects.filter(pk=pk).delete()
 
 
-def update_user(pk: str, data: dict, avatar_path: str | None) -> StoreUser:
+def update_user(pk: str, data: dict, avatar_file) -> StoreUser:
     user = StoreUser.objects.get(pk=pk)
     if data.get('password'):
         user.password = hash_user_password(data['password'])
@@ -101,16 +105,16 @@ def update_user(pk: str, data: dict, avatar_path: str | None) -> StoreUser:
         user.phone = data['phone']
     if data.get('email') is not None:
         user.email = data['email']
-    if avatar_path:
-        user.avatar = avatar_path
+    if avatar_file:
+        user.avatar = avatar_file
     user.updated_at = timezone.now()
     user.save()
     return user
 
 
-def change_avatar(pk: str, avatar_path: str) -> StoreUser:
+def change_avatar(pk: str, avatar_file) -> StoreUser:
     user = StoreUser.objects.get(pk=pk)
-    user.avatar = avatar_path
+    user.avatar = avatar_file
     user.updated_at = timezone.now()
     user.save()
     return user
@@ -159,7 +163,7 @@ def user_to_response(user: StoreUser) -> dict:
         'middleName': user.middle_name,
         'email': user.email,
         'phone': user.phone,
-        'avatar': user.avatar,
+        'avatar': media_url(user.avatar),
         'createdAt': user.created_at,
         'updatedAt': user.updated_at,
     }

@@ -20,6 +20,9 @@ class JsonErrorResponseMiddleware:
         return response
 
     def process_exception(self, request, exception):
+        if not request.path.startswith('/api/'):
+            return None
+
         # Convert common exceptions to correct HTTP codes instead of always 500.
         if isinstance(exception, Http404):
             return JsonResponse({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)

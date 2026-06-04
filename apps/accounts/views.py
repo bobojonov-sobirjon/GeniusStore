@@ -17,7 +17,6 @@ from apps.common.authentication import (
     StoreAdminPrincipal,
     StoreUserPrincipal,
 )
-from apps.common.file_storage import save_upload_file
 from apps.accounts import services_sync as acc
 from apps.common.openapi_requests import (
     REQ_ADMIN_CREATE,
@@ -150,11 +149,8 @@ class UserRootView(APIView):
         if not data.get('email') or not data.get('password'):
             raise ValidationError('email и password обязательны')
         avatar = request.FILES.get('avatar')
-        avatar_path = None
-        if avatar:
-            avatar_path = await sync_to_async(save_upload_file)('image', avatar)
         try:
-            user = await sync_to_async(acc.create_user)(dict(data), avatar_path)
+            user = await sync_to_async(acc.create_user)(dict(data), avatar)
         except ValueError as e:
             raise ValidationError(str(e)) from e
         resp = Response(acc.user_to_response(user))
@@ -177,11 +173,8 @@ class UserRootView(APIView):
         if not isinstance(request.user, StoreUserPrincipal):
             raise PermissionDenied('Пользователь не авторизован')
         avatar = request.FILES.get('avatar')
-        avatar_path = None
-        if avatar:
-            avatar_path = await sync_to_async(save_upload_file)('image', avatar)
         body = dict(request.data)
-        user = await sync_to_async(acc.update_user)(request.user.pk, body, avatar_path)
+        user = await sync_to_async(acc.update_user)(request.user.pk, body, avatar)
         return Response(acc.user_to_response(user))
 
 
@@ -264,8 +257,7 @@ class UserChangeAvatarView(APIView):
         avatar = request.FILES.get('avatar')
         if not avatar:
             raise ValidationError('Файл не найден')
-        path = await sync_to_async(save_upload_file)('image', avatar)
-        user = await sync_to_async(acc.change_avatar)(request.user.pk, path)
+        user = await sync_to_async(acc.change_avatar)(request.user.pk, avatar)
         return Response(acc.user_to_response(user))
 
 

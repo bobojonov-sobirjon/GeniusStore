@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from apps.catalog.serialization import _variant_qs, product_to_dict, variant_to_dict
 from apps.common.file_storage import delete_media_relative, save_upload_file
+from apps.common.media_urls import media_url
 from apps.common.slugify_store import generate_slug
 from apps.store_core.models import (
     Color,
@@ -315,7 +316,7 @@ def list_products_category_slug(page: int, limit: int, slug: str) -> dict:
         .order_by('-created_at')[(page - 1) * limit : page * limit]
     )
     cat_out = (
-        {'id': cat.id, 'name': cat.name, 'slug': cat.slug, 'icon': cat.icon, 'createdAt': cat.created_at}
+        {'id': cat.id, 'name': cat.name, 'slug': cat.slug, 'icon': media_url(cat.icon), 'createdAt': cat.created_at}
         if cat
         else None
     )

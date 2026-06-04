@@ -108,7 +108,7 @@ class Command(BaseCommand):
                     'first_name': row['first_name'],
                     'last_name': row['last_name'],
                     'password': acc.hash_user_password('12345678'),
-                    'avatar': '/uploads/image/user-default.png',
+                    'avatar': 'uploads/image/user-default.png',
                 },
             )
 
@@ -343,10 +343,10 @@ class Command(BaseCommand):
     def _seed_product_images(self, products: list[Product]) -> None:
         for p in products:
             for i in range(2):
-                path = f'image/demo-{p.slug}-{i + 1}.png'
+                path = f'uploads/image/demo-{p.slug}-{i + 1}.png'
                 ProductImage.objects.get_or_create(
                     product=p,
-                    path=path,
+                    image=path,
                     defaults={
                         'alt': p.title,
                         'sort_order': i,
@@ -413,7 +413,7 @@ class Command(BaseCommand):
                         'Здесь может быть полный текст новости или обзора.'
                     ),
                     'blog_category': blog_categories[idx % len(blog_categories)],
-                    'image': f'/uploads/image/blog-{idx + 1}.png',
+                    'image': f'uploads/image/blog-{idx + 1}.png',
                 },
             )
             for step_no in range(1, 4):
@@ -426,11 +426,11 @@ class Command(BaseCommand):
     def _seed_repair(self) -> None:
         sb_apple, _ = ServiceBrand.objects.get_or_create(
             slug='apple-service',
-            defaults={'name': 'Apple', 'image': '/uploads/image/service-apple.png'},
+            defaults={'name': 'Apple', 'image': 'uploads/image/service-apple.png'},
         )
         sb_samsung, _ = ServiceBrand.objects.get_or_create(
             slug='samsung-service',
-            defaults={'name': 'Samsung', 'image': '/uploads/image/service-samsung.png'},
+            defaults={'name': 'Samsung', 'image': 'uploads/image/service-samsung.png'},
         )
         models = []
         for name, slug, brand in [
@@ -478,8 +478,8 @@ class Command(BaseCommand):
                 title=title,
                 defaults={
                     'description': description,
-                    'img_pc': f'/uploads/image/banner-{idx + 1}-pc.png',
-                    'img_mobile': f'/uploads/image/banner-{idx + 1}-mobile.png',
+                    'img_pc': f'uploads/image/banner-{idx + 1}-pc.png',
+                    'img_mobile': f'uploads/image/banner-{idx + 1}-mobile.png',
                 },
             )
 

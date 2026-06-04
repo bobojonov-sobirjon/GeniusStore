@@ -6,6 +6,15 @@ from typing import Any
 from django.conf import settings
 
 
+def _field_path(value: Any) -> str | None:
+    if not value:
+        return None
+    if hasattr(value, 'name'):
+        name = getattr(value, 'name', None)
+        return str(name).strip() if name else None
+    return str(value).strip() or None
+
+
 def _normalize_media_path(path: str) -> str:
     path = path.strip()
     if path.startswith(('http://', 'https://')):
@@ -20,6 +29,7 @@ def _normalize_media_path(path: str) -> str:
 
 
 def media_url(path: str | None, request=None) -> str | None:
+    path = _field_path(path)
     if not path:
         return None
     if path.startswith(('http://', 'https://')):

@@ -5,6 +5,7 @@ from typing import Any
 from django.db.models import Count, Prefetch, Q
 
 from apps.catalog.serialization import product_to_dict
+from apps.common.media_urls import media_url
 from apps.store_core.models import (
     Brand,
     Category,
@@ -94,7 +95,7 @@ def get_filter_data(slug: str, model_id: int | None, brand_id: int | None) -> di
 
     categories = []
     for c in Category.objects.annotate(count=Count('products')).order_by('created_at'):
-        categories.append({'id': c.id, 'name': c.name, 'icon': c.icon, 'slug': c.slug, 'count': c.count})
+        categories.append({'id': c.id, 'name': c.name, 'icon': media_url(c.icon), 'slug': c.slug, 'count': c.count})
 
     brand_filter = Q(products__category_id=cid)
     brands = []

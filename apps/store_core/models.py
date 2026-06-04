@@ -9,6 +9,9 @@ import uuid
 from django.db import models
 
 
+from apps.common.file_storage import image_upload_to
+
+
 class PrismaModel(models.Model):
     class Meta:
         abstract = True
@@ -37,7 +40,7 @@ class StoreUser(PrismaModel):
     middle_name = models.TextField('Отчество', db_column='middleName', null=True, blank=True)
     email = models.TextField('Электронная почта', null=True, blank=True, unique=True)
     phone = models.TextField('Телефон', null=True, blank=True, unique=True)
-    avatar = models.TextField('Аватар', null=True, blank=True, default='')
+    avatar = models.ImageField('Аватар', upload_to=image_upload_to, max_length=512, null=True, blank=True)
     password = models.TextField('Пароль')
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
@@ -84,7 +87,7 @@ class Blog(PrismaModel):
         on_delete=models.RESTRICT,
         related_name='blogs',
     )
-    image = models.TextField('Изображение', null=True, blank=True)
+    image = models.ImageField('Изображение', upload_to=image_upload_to, max_length=512, null=True, blank=True)
     created_at = models.DateTimeField('Создана', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлена', db_column='updatedAt', auto_now=True)
 
@@ -125,7 +128,7 @@ class BlogSteps(PrismaModel):
 class Category(PrismaModel):
     id = models.AutoField('Идентификатор', primary_key=True)
     name = models.TextField('Название')
-    icon = models.TextField('Иконка', null=True, blank=True)
+    icon = models.ImageField('Иконка', upload_to=image_upload_to, max_length=512, null=True, blank=True)
     slug = models.TextField('Слаг', null=True, blank=True, unique=True)
     created_at = models.DateTimeField('Создана', db_column='createdAt', auto_now_add=True)
 
@@ -316,7 +319,12 @@ class ProductImage(models.Model):
         on_delete=models.CASCADE,
         related_name='product_images',
     )
-    path = models.TextField('Путь к файлу', blank=True, default='')
+    image = models.ImageField(
+        'Изображение',
+        upload_to=image_upload_to,
+        max_length=512,
+        blank=True,
+    )
     alt = models.TextField('Alt текст', blank=True, default='')
     sort_order = models.PositiveIntegerField('Порядок', default=0)
     is_primary = models.BooleanField('Главное фото', default=False)
@@ -330,13 +338,11 @@ class ProductImage(models.Model):
         managed = True
 
     def __str__(self) -> str:
-        return f'{self.product}: {self.path or "—"}'
+        return f'{self.product}: {self.image.name if self.image else "—"}'
 
     def delete(self, *args, **kwargs):
-        if self.path:
-            from apps.common.file_storage import delete_media_relative
-
-            delete_media_relative(self.path)
+        if self.image:
+            self.image.delete(save=False)
         return super().delete(*args, **kwargs)
 
 
@@ -507,7 +513,7 @@ class ServiceBrand(PrismaModel):
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
     name = models.TextField('Название')
     slug = models.TextField('Слаг', unique=True)
-    image = models.TextField('Изображение')
+    image = models.ImageField('Изображение', upload_to=image_upload_to, max_length=512)
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
 
@@ -579,8 +585,13 @@ class Banner(PrismaModel):
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
     title = models.TextField('Заголовок')
     description = models.TextField('Описание')
-    img_pc = models.TextField('Изображение (ПК)', db_column='imgPc')
-    img_mobile = models.TextField('Изображение (мобильный)', db_column='imgMobile')
+    img_pc = models.ImageField('Изображение (ПК)', upload_to=image_upload_to, max_length=512, db_column='imgPc')
+    img_mobile = models.ImageField(
+        'Изображение (мобильный)',
+        upload_to=image_upload_to,
+        max_length=512,
+        db_column='imgMobile',
+    )
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
 

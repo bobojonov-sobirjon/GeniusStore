@@ -4,7 +4,6 @@ import uuid
 
 from django.utils import timezone
 
-from apps.common.file_storage import save_upload_file
 from apps.common.media_urls import serialize_values_list, serialize_values_row
 from apps.common.uuid_utils import normalize_uuid
 from apps.store_core.models import Banner, Info
@@ -13,11 +12,8 @@ BANNER_MEDIA_FIELDS = ('img_pc', 'img_mobile')
 
 
 def banner_create(data: dict, img_pc, img_mobile) -> Banner:
-    if img_pc or img_mobile:
-        pc = save_upload_file('image', img_pc) if img_pc else save_upload_file('image', img_mobile)
-        mob = save_upload_file('image', img_mobile) if img_mobile else pc
-    else:
-        pc = mob = ''
+    pc = img_pc or img_mobile
+    mob = img_mobile or img_pc
     return Banner.objects.create(
         id=str(uuid.uuid4()),
         title=data['title'],
@@ -50,9 +46,9 @@ def banner_update(pk: str, data: dict, img_pc, img_mobile) -> dict:
     if data.get('description') is not None:
         b.description = data['description']
     if img_pc:
-        b.img_pc = save_upload_file('image', img_pc)
+        b.img_pc = img_pc
     if img_mobile:
-        b.img_mobile = save_upload_file('image', img_mobile)
+        b.img_mobile = img_mobile
     b.updated_at = timezone.now()
     b.save()
     return banner_one(str(b.id))

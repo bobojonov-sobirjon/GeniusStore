@@ -4,7 +4,6 @@ import uuid
 
 from django.utils import timezone
 
-from apps.common.file_storage import save_upload_file
 from apps.common.media_urls import media_url, serialize_values_list, serialize_values_row
 from apps.common.slugify_store import generate_slug
 from apps.common.uuid_utils import normalize_uuid
@@ -16,12 +15,11 @@ BRAND_MEDIA_FIELDS = ('image',)
 def brand_create(data: dict, image) -> ServiceBrand:
     if not image:
         raise ValueError('image required')
-    path = save_upload_file('image', image)
     return ServiceBrand.objects.create(
         id=str(uuid.uuid4()),
         name=data['name'],
         slug=generate_slug(data['name']),
-        image=path,
+        image=image,
     )
 
 
@@ -84,7 +82,7 @@ def brand_update(id_: str, data: dict, image) -> dict:
         raise LookupError('Brand not found')
     b = ServiceBrand.objects.get(pk=uid)
     if image:
-        b.image = save_upload_file('image', image)
+        b.image = image
     if data.get('name'):
         b.name = data['name']
         b.slug = generate_slug(data['name'])

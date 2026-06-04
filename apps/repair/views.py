@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from apps.common.views import APIView
 
 from apps.common.authentication import AdminBearerAuthentication, StoreAdminPrincipal
+from apps.common.media_urls import media_url
 from apps.common.openapi_requests import (
     REQ_SERVICE_BRAND_CREATE,
     REQ_SERVICE_BRAND_PATCH,
@@ -40,7 +41,7 @@ class ServiceBrandCreateView(APIView):
             b = await sync_to_async(r.brand_create)(dict(request.data), request.FILES.get('image'))
         except ValueError as e:
             raise ValidationError(str(e)) from e
-        return Response({'id': str(b.id), 'name': b.name, 'slug': b.slug, 'image': b.image})
+        return Response({'id': str(b.id), 'name': b.name, 'slug': b.slug, 'image': media_url(b.image)})
 
 
 @extend_schema(tags=['Ремонт — Бренды'])
