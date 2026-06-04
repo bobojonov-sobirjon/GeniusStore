@@ -364,10 +364,12 @@ class Command(BaseCommand):
             picked = variants[idx * 2:(idx * 2) + 2] or variants[:2]
             total = int(sum(v.price for v in picked))
             order, created = StoreOrder.objects.get_or_create(
-                user=user,
+                email=user.email,
                 total_sum=total,
                 delivery_type=StoreOrder.DeliveryType.DELIVERY if idx % 2 == 0 else StoreOrder.DeliveryType.PICKUP,
                 defaults={
+                    'full_name': f'{user.first_name} {user.last_name}'.strip() or user.email,
+                    'phone': user.phone or '+79000000000',
                     'apartment': '12',
                     'entrance': '2',
                     'floor': '5',

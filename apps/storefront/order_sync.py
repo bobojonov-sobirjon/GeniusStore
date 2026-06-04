@@ -63,7 +63,9 @@ def order_to_dict(order: StoreOrder) -> dict[str, Any]:
     items = list(order.items.select_related('product_variant__product', 'product_variant__memory', 'product_variant__color'))
     return {
         'id': str(order.id),
-        'userId': str(order.user_id) if order.user_id else None,
+        'fullName': order.full_name,
+        'email': order.email,
+        'phone': order.phone,
         'totalPrice': order.total_sum,
         'isDelivery': order.is_delivery,
         'isPickup': order.is_pickup,
@@ -98,6 +100,19 @@ def _parse_delivery_type(data: dict) -> str:
     raise ValueError('Неверный deliveryType')
 
 
+def _parse_contact(data: dict) -> tuple[str, str, str]:
+    full_name = str(data.get('fullName') or data.get('full_name') or data.get('fio') or '').strip()
+    email = str(data.get('email') or '').strip()
+    phone = str(data.get('phone') or '').strip()
+    if not full_name:
+        raise ValueError('fullName обязателен')
+    if not email:
+        raise ValueError('email обязателен')
+    if not phone:
+        raise ValueError('phone обязателен')
+    return full_name, email, phone
+
+
 def _parse_products_list(data: dict) -> list[dict]:
     rows = data.get('products_list') or data.get('productsList') or data.get('products') or []
     if not isinstance(rows, list) or not rows:
@@ -116,24 +131,25 @@ def _parse_products_list(data: dict) -> list[dict]:
     return out
 
 
-def create_order(user_id: str, data: dict) -> dict:
+def create_order(data: dict) -> dict:
     products_list = _parse_products_list(data)
     delivery_type = _parse_delivery_type(data)
+    full_name, email, phone = _parse_contact(data)
     apartment = str(data.get('apartment') or data.get('kvartira') or '').strip()
     entrance = str(data.get('entrance') or data.get('podezd') or '').strip()
     floor = str(data.get('floor') or data.get('etazh') or '').strip()
 
-    if delivery_type == StoreOrder.DeliveryType.DELIVERY and not any([apartment, entrance, floor]):
-        pass  # address fields optional
-
     with transaction.atomic():
         order = StoreOrder.objects.create(
-            user_id=user_id,
+            user_id=None,
             total_sum=0,
             delivery_type=delivery_type,
             apartment=apartment,
             entrance=entrance,
             floor=floor,
+            full_name=full_name,
+            email=email,
+            phone=phone,
             products=[],
         )
         total = 0
@@ -161,21 +177,21 @@ def create_order(user_id: str, data: dict) -> dict:
     return order_to_dict(order)
 
 
-def list_orders(user_id: str) -> list[dict]:
+def list_orders_by_email(email: str) -> list[dict]:
     qs = (
-        StoreOrder.objects.filter(user_id=user_id)
+        StoreOrder.objects.filter(email__iexact=email.strip())
         .prefetch_related('items__product_variant__product', 'items__product_variant__memory', 'items__product_variant__color')
         .order_by('-created_at')
     )
     return [order_to_dict(order) for order in qs]
 
 
-def get_order(user_id: str, order_id: str) -> dict | None:
+def get_order(order_id: str) -> dict | None:
     uid = normalize_uuid(order_id)
     if not uid:
         return None
     order = (
-        StoreOrder.objects.filter(pk=uid, user_id=user_id)
+        StoreOrder.objects.filter(pk=uid)
         .prefetch_related('items__product_variant__product', 'items__product_variant__memory', 'items__product_variant__color')
         .first()
     )

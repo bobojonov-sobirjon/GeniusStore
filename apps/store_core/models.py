@@ -439,6 +439,9 @@ class StoreOrder(PrismaModel):
     apartment = models.CharField('Квартира', max_length=64, blank=True, default='')
     entrance = models.CharField('Подъезд', max_length=64, blank=True, default='')
     floor = models.CharField('Этаж', max_length=64, blank=True, default='')
+    full_name = models.CharField('ФИО', max_length=255, db_column='fullName', blank=True, default='')
+    email = models.EmailField('Email', blank=True, default='')
+    phone = models.CharField('Телефон', max_length=32, blank=True, default='')
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', db_column='updatedAt', auto_now=True)
     user = models.ForeignKey(

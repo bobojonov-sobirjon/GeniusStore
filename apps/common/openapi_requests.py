@@ -413,6 +413,15 @@ REQ_PRODUCT_VARIANT_PATCH = inline_serializer(
     },
 )
 
+REQ_CONSULTATION_FORM = inline_serializer(
+    name='ConsultationRequest',
+    fields={
+        'name': serializers.CharField(help_text='Имя клиента'),
+        'phone': serializers.CharField(help_text='Телефон'),
+        'consent': serializers.BooleanField(required=False, help_text='Согласие на обработку данных'),
+    },
+)
+
 REQ_HELP_FORM = inline_serializer(
     name='HelpFormRequest',
     fields={
@@ -458,6 +467,9 @@ REQ_ORDER_PRODUCT_LINE = inline_serializer(
 REQ_ORDER_CREATE = inline_serializer(
     name='OrderCreateRequest',
     fields={
+        'fullName': serializers.CharField(help_text='ФИО покупателя'),
+        'email': serializers.EmailField(help_text='Email покупателя'),
+        'phone': serializers.CharField(help_text='Телефон покупателя'),
         'products_list': serializers.ListField(
             child=REQ_ORDER_PRODUCT_LINE,
             help_text='Список позиций заказа',
@@ -488,7 +500,9 @@ RES_ORDER = inline_serializer(
     name='OrderResponse',
     fields={
         'id': serializers.CharField(),
-        'userId': serializers.CharField(allow_null=True),
+        'fullName': serializers.CharField(),
+        'email': serializers.EmailField(),
+        'phone': serializers.CharField(),
         'totalPrice': serializers.IntegerField(),
         'isDelivery': serializers.BooleanField(),
         'isPickup': serializers.BooleanField(),

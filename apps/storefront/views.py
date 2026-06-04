@@ -9,7 +9,7 @@ from apps.common.views import APIView
 
 from apps.common.authentication import AdminBearerAuthentication, CookieJWTAuthentication, StoreAdminPrincipal, StoreUserPrincipal
 from apps.common.integrations.telegram import telegram_send_markdown
-from apps.common.openapi_requests import REQ_CART_ADD, REQ_CART_PATCH, REQ_ORDER_CREATE, RES_CART, RES_ORDER
+from apps.common.openapi_requests import REQ_CART_ADD, REQ_CART_PATCH, REQ_CONSULTATION_FORM, REQ_ORDER_CREATE, RES_CART, RES_ORDER
 from apps.storefront import order_sync as orders
 from apps.storefront import storefront_sync as sf
 from apps.storefront.models import Review
@@ -149,12 +149,11 @@ class CartItemView(APIView):
 
 @extend_schema(tags=['Заказы'])
 class OrderRootView(APIView):
-    authentication_classes = [CookieJWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
-        summary='Мои заказы',
-        description='Возвращает массив заказов текущего пользователя (cookie `access_token`).',
+        summary='Заказы по email',
+        description='Query: `email` — список заказов гостя без авторизации.',
         responses={
             200: OpenApiResponse(
                 response=RES_ORDER,
@@ -163,24 +162,24 @@ class OrderRootView(APIView):
         },
     )
     async def get(self, request):
-        uid = _require_user(request)
-        data = await sync_to_async(orders.list_orders)(uid)
+        email = (request.query_params.get('email') or '').strip()
+        if not email:
+            raise ValidationError('Query-параметр email обязателен')
+        data = await sync_to_async(orders.list_orders_by_email)(email)
         return Response(data)
 
     @extend_schema(
         summary='Оформить заказ',
         description=(
-            'Создаёт заказ для текущего пользователя. '
-            '`product_id` — UUID варианта товара (ProductVariant) или числовой id товара. '
-            'Способ получения: `isDelivery` / `isPickup`.'
+            'Создаёт заказ без авторизации. Обязательны: `fullName`, `email`, `phone`, `products_list`. '
+            '`product_id` — UUID варианта (ProductVariant). Способ получения: `isDelivery` / `isPickup`.'
         ),
         request=REQ_ORDER_CREATE,
         responses={201: RES_ORDER},
     )
     async def post(self, request):
-        uid = _require_user(request)
         try:
-            row = await sync_to_async(orders.create_order)(uid, dict(request.data))
+            row = await sync_to_async(orders.create_order)(dict(request.data))
         except LookupError as e:
             raise NotFound(str(e)) from e
         except ValueError as e:
@@ -190,17 +189,15 @@ class OrderRootView(APIView):
 
 @extend_schema(tags=['Заказы'])
 class OrderDetailView(APIView):
-    authentication_classes = [CookieJWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         summary='Заказ по id',
-        description='Только свой заказ (UUID).',
+        description='Публичный просмотр заказа по UUID (без авторизации).',
         responses={200: RES_ORDER},
     )
     async def get(self, request, pk: str):
-        uid = _require_user(request)
-        row = await sync_to_async(orders.get_order)(uid, str(pk))
+        row = await sync_to_async(orders.get_order)(str(pk))
         if not row:
             raise NotFound()
         return Response(row)
@@ -295,7 +292,9 @@ class ConsultationView(APIView):
 
     @extend_schema(
         summary='Заявка «Получить консультацию»',
-        description='JSON: `name`, `phone`, опционально `consent`. Уведомление в Telegram (как форма Help).',
+        description='JSON: `name`, `phone`, опционально `consent`. Уведомление в Telegram.',
+        request=REQ_CONSULTATION_FORM,
+        responses={200: {'type': 'object', 'properties': {'message': {'type': 'string'}}}},
     )
     async def post(self, request):
         d = dict(request.data)

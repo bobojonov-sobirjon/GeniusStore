@@ -115,8 +115,9 @@ class ProductTradeInView(APIView):
 
     @extend_schema(
         summary='Заявка Trade-in',
-        description='Уведомление уходит в Telegram.',
+        description='JSON body. Уведомление уходит в Telegram.',
         request=REQ_TRADEIN_FORM,
+        responses={200: {'type': 'object', 'properties': {'ok': {'type': 'boolean'}}}},
     )
     async def post(self, request):
         d = dict(request.data)
@@ -130,10 +131,9 @@ class ProductRepairView(APIView):
 
     @extend_schema(
         summary='Заявка на ремонт',
-        description=(
-            'Сообщение формируется в Markdown и отправляется в Telegram.'
-        ),
+        description='JSON body. Сообщение отправляется в Telegram.',
         request=REQ_REPAIR_FORM,
+        responses={200: {'type': 'object', 'properties': {'ok': {'type': 'boolean'}}}},
     )
     async def post(self, request):
         d = dict(request.data)

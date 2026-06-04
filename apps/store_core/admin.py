@@ -291,16 +291,16 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(m.StoreOrder)
 class StoreOrderAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     drawer_add = False
-    list_display = ('id', 'user', 'total_sum', 'delivery_type', 'items_count', 'created_at')
+    list_display = ('id', 'full_name', 'email', 'phone', 'total_sum', 'delivery_type', 'items_count', 'created_at')
     list_filter = ('delivery_type', 'created_at')
-    search_fields = ('id', 'user__email', 'user__phone', 'user__first_name', 'user__last_name')
+    search_fields = ('id', 'full_name', 'email', 'phone', 'user__email')
     autocomplete_fields = ('user',)
     ordering = ('-created_at',)
     readonly_fields = ('id', 'total_sum', 'created_at', 'updated_at')
     inlines = (OrderItemInline,)
     fieldsets = (
         (None, {
-            'fields': ('id', 'user', 'total_sum', 'delivery_type', 'created_at', 'updated_at'),
+            'fields': ('id', 'full_name', 'email', 'phone', 'user', 'total_sum', 'delivery_type', 'created_at', 'updated_at'),
             'classes': ('whale-card',),
         }),
         ('Адрес доставки', {
