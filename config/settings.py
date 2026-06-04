@@ -251,7 +251,7 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.getenv('MEDIA_ROOT', '').strip() or str(BASE_DIR / 'media')
+MEDIA_ROOT = "/var/www/media/"
 PUBLIC_MEDIA_BASE_URL = os.getenv('PUBLIC_MEDIA_BASE_URL', 'https://admin.geniusstorerf.ru').strip()
 
 
