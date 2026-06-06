@@ -3,6 +3,10 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """
+    Brand.image — DB ustuni RunSQL orqali (IF NOT EXISTS).
+    Django state alohida yangilanadi, qayta ADD COLUMN qilinmaydi.
+    """
 
     dependencies = [
         ('store_core', '0007_image_fields'),
@@ -12,9 +16,6 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql='ALTER TABLE "Brand" ADD COLUMN IF NOT EXISTS "image" VARCHAR(512);',
             reverse_sql='ALTER TABLE "Brand" DROP COLUMN IF EXISTS "image";',
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
             state_operations=[
                 migrations.AddField(
                     model_name='brand',
