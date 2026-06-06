@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 max_length=512,
                 upload_to=apps.common.file_storage.image_upload_to,
-                verbose_name='Превью',
+                verbose_name='Файл превью',
             ),
         ),
     ]

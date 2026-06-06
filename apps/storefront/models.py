@@ -62,7 +62,7 @@ class Review(models.Model):
     source = models.CharField('Источник', max_length=32, choices=SOURCE_CHOICES, default=SOURCE_SITE)
     video_url = models.URLField('Видео URL', blank=True, default='')
     thumbnail = models.ImageField(
-        'Превью',
+        'Файл превью',
         upload_to=image_upload_to,
         max_length=512,
         blank=True,

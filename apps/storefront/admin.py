@@ -30,7 +30,7 @@ class ReviewAdmin(admin.ModelAdmin):
         'thumbnail', 'preview_thumb', 'is_published', 'id', 'created_at',
     )
 
-    @admin.display(description='Превью')
+    @admin.display(description='Просмотр превью')
     def preview_thumb(self, obj: Review):
         if obj.thumbnail:
             url = media_url(obj.thumbnail) or obj.thumbnail.url
