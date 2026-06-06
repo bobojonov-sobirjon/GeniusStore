@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             sql='ALTER TABLE "Brand" ADD COLUMN IF NOT EXISTS "image" VARCHAR(512);',
             reverse_sql='ALTER TABLE "Brand" DROP COLUMN IF EXISTS "image";',
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name='brand',
             name='image',
             field=models.ImageField(
