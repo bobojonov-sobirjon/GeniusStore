@@ -139,9 +139,27 @@ class Command(BaseCommand):
             'Apple', 'Samsung', 'Dyson', 'Sony', 'Valve', 'Yandex',
             'Canon', 'FUJIFILM', 'GoPro', 'Marshall', 'Google', 'Xiaomi',
         ]
+        slug_map = {
+            'Apple': 'apple',
+            'Samsung': 'samsung',
+            'Dyson': 'dyson',
+            'Sony': 'sony',
+            'Valve': 'valve',
+            'Yandex': 'yandex',
+            'Canon': 'canon',
+            'FUJIFILM': 'fujifilm',
+            'GoPro': 'gopro',
+            'Marshall': 'marshall',
+            'Google': 'google',
+            'Xiaomi': 'xiaomi',
+        }
         out = []
         for name in names:
-            obj, _ = Brand.objects.get_or_create(name=name)
+            obj, created = Brand.objects.get_or_create(name=name)
+            if created or not obj.image:
+                slug = slug_map.get(name, name.lower().replace(' ', '-'))
+                obj.image = f'uploads/image/brand-{slug}.png'
+                obj.save(update_fields=['image'])
             out.append(obj)
         return out
 

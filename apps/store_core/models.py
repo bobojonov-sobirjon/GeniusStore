@@ -145,6 +145,13 @@ class Category(PrismaModel):
 class Brand(PrismaModel):
     id = models.AutoField('Идентификатор', primary_key=True)
     name = models.TextField('Название')
+    image = models.ImageField(
+        'Изображение',
+        upload_to=image_upload_to,
+        max_length=512,
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)
 
     class Meta:

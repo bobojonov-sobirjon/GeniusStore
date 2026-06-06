@@ -278,12 +278,18 @@ REQ_MEMORY_PATCH = inline_serializer(
 
 REQ_BRAND_WRITE = inline_serializer(
     name='BrandWriteRequest',
-    fields={'name': serializers.CharField()},
+    fields={
+        'name': serializers.CharField(),
+        'image': serializers.ImageField(required=False, allow_null=True),
+    },
 )
 
 REQ_BRAND_PATCH = inline_serializer(
     name='BrandPatchRequest',
-    fields={'name': serializers.CharField(required=False, allow_blank=True)},
+    fields={
+        'name': serializers.CharField(required=False, allow_blank=True),
+        'image': serializers.ImageField(required=False, allow_null=True),
+    },
 )
 
 REQ_CATEGORY_CREATE = inline_serializer(

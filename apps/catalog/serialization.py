@@ -165,7 +165,11 @@ def product_to_dict(
         'aod': p.aod,
         'createdAt': p.created_at,
         'updatedAt': p.updated_at,
-        'brand': {'id': brand.id, 'name': brand.name} if brand else None,
+        'brand': {
+            'id': brand.id,
+            'name': brand.name,
+            'image': media_url(brand.image, request),
+        } if brand else None,
         'category': {
             'id': category.id,
             'name': category.name,

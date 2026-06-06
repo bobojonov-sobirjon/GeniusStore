@@ -64,23 +64,36 @@ def memory_delete(pk: int) -> None:
 
 
 def brand_list():
-    return list(Brand.objects.order_by('id').values())
+    return [_brand_row(b) for b in Brand.objects.order_by('id')]
 
 
 def brand_one(pk: int):
-    return Brand.objects.filter(pk=pk).values().first()
+    b = Brand.objects.filter(pk=pk).first()
+    return _brand_row(b) if b else None
 
 
-def brand_create(data: dict) -> dict:
-    b = Brand.objects.create(name=data['name'])
-    return {'id': b.id, 'name': b.name, 'createdAt': b.created_at}
+def _brand_row(b: Brand) -> dict:
+    return {
+        'id': b.id,
+        'name': b.name,
+        'image': media_url(b.image),
+        'created_at': b.created_at,
+    }
 
 
-def brand_update(pk: int, data: dict) -> dict:
+def brand_create(data: dict, image_file) -> dict:
+    b = Brand.objects.create(name=data['name'], image=image_file)
+    return _brand_row(b)
+
+
+def brand_update(pk: int, data: dict, image_file) -> dict:
     b = Brand.objects.get(pk=pk)
-    b.name = data.get('name', b.name)
+    if image_file:
+        b.image = image_file
+    if data.get('name'):
+        b.name = data['name']
     b.save()
-    return {'id': b.id, 'name': b.name, 'createdAt': b.created_at}
+    return _brand_row(b)
 
 
 def brand_delete(pk: int) -> None:

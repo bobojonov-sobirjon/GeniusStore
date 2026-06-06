@@ -133,8 +133,8 @@ class MemoryDetailView(APIView):
     ),
     post=extend_schema(
         summary='Создать бренд',
-        description='Поле `name` — название бренда (обязательно).',
-        request=REQ_BRAND_WRITE,
+        description='Поле `name` — название бренда (обязательно). Файл формы: `image` (логотип, опционально).',
+        request={'multipart/form-data': REQ_BRAND_WRITE},
     ),
 )
 @extend_schema(tags=['Справочники — Бренды'])
@@ -145,12 +145,18 @@ class BrandListCreateView(APIView):
         return Response(await sync_to_async(d.brand_list)())
 
     async def post(self, request):
-        return Response(await sync_to_async(d.brand_create)(dict(request.data)))
+        return Response(
+            await sync_to_async(d.brand_create)(dict(request.data), request.FILES.get('image'))
+        )
 
 
 @extend_schema_view(
     get=extend_schema(summary='Бренд по id', description='Одна запись бренда.'),
-    patch=extend_schema(summary='Обновить бренд', description='Поле `name` — новое название.', request=REQ_BRAND_PATCH),
+    patch=extend_schema(
+        summary='Обновить бренд',
+        description='JSON-поля и опционально файл `image` в multipart.',
+        request={'multipart/form-data': REQ_BRAND_PATCH},
+    ),
     delete=extend_schema(summary='Удалить бренд', description='Удаление бренда по id.'),
 )
 @extend_schema(tags=['Справочники — Бренды'])
@@ -164,7 +170,9 @@ class BrandDetailView(APIView):
         return Response(row)
 
     async def patch(self, request, pk: int):
-        return Response(await sync_to_async(d.brand_update)(int(pk), dict(request.data)))
+        return Response(
+            await sync_to_async(d.brand_update)(int(pk), dict(request.data), request.FILES.get('image'))
+        )
 
     async def delete(self, request, pk: int):
         await sync_to_async(d.brand_delete)(int(pk))
