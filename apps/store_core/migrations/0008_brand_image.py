@@ -13,15 +13,20 @@ class Migration(migrations.Migration):
             sql='ALTER TABLE "Brand" ADD COLUMN IF NOT EXISTS "image" VARCHAR(512);',
             reverse_sql='ALTER TABLE "Brand" DROP COLUMN IF EXISTS "image";',
         ),
-        migrations.AddField(
-            model_name='brand',
-            name='image',
-            field=models.ImageField(
-                blank=True,
-                max_length=512,
-                null=True,
-                upload_to=apps.common.file_storage.image_upload_to,
-                verbose_name='Изображение',
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='brand',
+                    name='image',
+                    field=models.ImageField(
+                        blank=True,
+                        max_length=512,
+                        null=True,
+                        upload_to=apps.common.file_storage.image_upload_to,
+                        verbose_name='Изображение',
+                    ),
+                ),
+            ],
         ),
     ]
