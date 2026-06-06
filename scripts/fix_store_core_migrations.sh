@@ -14,7 +14,7 @@ git clean -fd apps/store_core/migrations/
 echo "==> Migratsiya fayllari:"
 ls -1 apps/store_core/migrations/*.py
 
-echo "==> DB: eski merge yozuvlarini tozalash (agar bor bo'lsa)"
+echo "==> DB: merge yozuvlari + Brand.image ustuni"
 python3 manage.py shell <<'PY'
 from django.db import connection
 
@@ -33,17 +33,39 @@ with connection.cursor() as c:
             "DELETE FROM django_migrations WHERE app = %s AND name = %s",
             ['store_core', name],
         )
+
+    c.execute(
+        """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'Brand' AND column_name = 'image'
+        """
+    )
+    has_column = c.fetchone() is not None
+
     c.execute(
         "SELECT 1 FROM django_migrations WHERE app = %s AND name = %s",
         ['store_core', '0008_brand_image'],
     )
-    if c.fetchone():
-        print('0008_brand_image allaqachon applied — fake kerak emas')
+    migration_applied = c.fetchone() is not None
+
+    if not has_column:
+        print('Brand.image ustuni yo\'q — qo\'shilmoqda...')
+        c.execute('ALTER TABLE "Brand" ADD COLUMN IF NOT EXISTS "image" VARCHAR(512);')
+        if not migration_applied:
+            c.execute(
+                "INSERT INTO django_migrations (app, name, applied) VALUES (%s, %s, NOW())",
+                ['store_core', '0008_brand_image'],
+            )
+            print('0008_brand_image migratsiyasi ham belgilandi')
+        else:
+            print('0008_brand_image allaqachon applied edi — faqat ustun qo\'shildi')
+    elif not migration_applied:
+        print('Ustun bor, migratsiya yo\'q — 0008 fake qilinadi (keyingi qadam)')
     else:
-        print('0008_brand_image hali applied emas — keyin migrate ishlaydi')
+        print('Brand.image va migratsiya tayyor')
 PY
 
-echo "==> Brand.image ustuni mavjud bo'lsa, 0008 ni fake qilish"
+echo "==> Migratsiya holati (agar ustun bor, lekin 0008 applied emas bo'lsa)"
 python3 manage.py migrate store_core 0008_brand_image --fake 2>/dev/null || true
 
 echo "==> Qolgan migratsiyalar"
