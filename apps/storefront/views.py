@@ -231,7 +231,10 @@ class ReviewRootView(APIView):
         _require_admin(request)
         if not request.data.get('authorName'):
             raise ValidationError('authorName обязателен')
-        out = await sync_to_async(sf.create_review)(dict(request.data))
+        out = await sync_to_async(sf.create_review)(
+            dict(request.data),
+            request.FILES.get('thumbnail'),
+        )
         return Response(out)
 
 
@@ -258,7 +261,11 @@ class ReviewDetailView(APIView):
     async def patch(self, request, pk: str):
         _require_admin(request)
         try:
-            out = await sync_to_async(sf.update_review)(str(pk), dict(request.data))
+            out = await sync_to_async(sf.update_review)(
+                str(pk),
+                dict(request.data),
+                request.FILES.get('thumbnail'),
+            )
         except Review.DoesNotExist as e:
             raise NotFound() from e
         return Response(out)

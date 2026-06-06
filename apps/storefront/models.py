@@ -4,6 +4,8 @@ import uuid
 
 from django.db import models
 
+from apps.common.file_storage import image_upload_to
+
 
 class Favorite(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,7 +61,12 @@ class Review(models.Model):
     rating = models.PositiveSmallIntegerField('Оценка', default=5)
     source = models.CharField('Источник', max_length=32, choices=SOURCE_CHOICES, default=SOURCE_SITE)
     video_url = models.URLField('Видео URL', blank=True, default='')
-    thumbnail = models.TextField('Превью', blank=True, default='')
+    thumbnail = models.ImageField(
+        'Превью',
+        upload_to=image_upload_to,
+        max_length=512,
+        blank=True,
+    )
     is_published = models.BooleanField('Опубликован', default=True)
     created_at = models.DateTimeField('Дата', auto_now_add=True)
 

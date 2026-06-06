@@ -542,7 +542,7 @@ class Command(BaseCommand):
                 defaults={
                     'rating': rating,
                     'video_url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' if idx == 3 else '',
-                    'thumbnail': f'/uploads/image/review-{idx + 1}.png',
+                    'thumbnail': f'uploads/image/review-{idx + 1}.png',
                     'is_published': True,
                 },
             )

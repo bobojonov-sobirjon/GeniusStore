@@ -195,20 +195,22 @@ def list_video_reviews(page: int, limit: int) -> dict:
     return {'data': data, 'count': total, 'page': page, 'limit': limit}
 
 
-def create_review(data: dict) -> dict:
+def create_review(data: dict, thumbnail_file=None) -> dict:
     r = Review.objects.create(
         author_name=data['authorName'],
         text=data.get('text') or '',
         rating=int(data.get('rating') or 5),
         source=data.get('source') or Review.SOURCE_SITE,
         video_url=data.get('videoUrl') or '',
-        thumbnail=data.get('thumbnail') or '',
         is_published=bool(data.get('isPublished', True)),
     )
+    if thumbnail_file:
+        r.thumbnail = thumbnail_file
+        r.save(update_fields=['thumbnail'])
     return {'id': str(r.id)}
 
 
-def update_review(pk: str, data: dict) -> dict:
+def update_review(pk: str, data: dict, thumbnail_file=None) -> dict:
     r = Review.objects.get(pk=pk)
     for key, attr in (
         ('authorName', 'author_name'),
@@ -216,11 +218,12 @@ def update_review(pk: str, data: dict) -> dict:
         ('rating', 'rating'),
         ('source', 'source'),
         ('videoUrl', 'video_url'),
-        ('thumbnail', 'thumbnail'),
         ('isPublished', 'is_published'),
     ):
         if key in data:
             setattr(r, attr, data[key])
+    if thumbnail_file:
+        r.thumbnail = thumbnail_file
     r.save()
     return {'id': str(r.id)}
 
