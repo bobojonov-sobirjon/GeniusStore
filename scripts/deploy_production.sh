@@ -8,6 +8,9 @@ cd "$ROOT"
 echo "==> git pull"
 git pull origin main
 
+echo "==> STATIC_URL (must be /static/)"
+grep '^STATIC_URL' config/settings.py
+
 echo "==> collectstatic"
 python manage.py collectstatic --noinput
 
@@ -20,8 +23,8 @@ else
     echo "Warning: no geniusstore/gunicorn service found — restart your WSGI process manually."
 fi
 
-echo "==> verify static (must return CSS, not HTML login page)"
-curl -sI "http://127.0.0.1/static/vendor/adminlte/css/adminlte.min.css" | head -n 1 || true
+echo "==> verify"
+bash scripts/verify_admin_static.sh || true
 
 echo "==> done"
 echo "Hard-refresh admin in browser: Ctrl+F5"
