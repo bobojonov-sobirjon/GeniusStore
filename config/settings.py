@@ -133,6 +133,8 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": False,
 }
 
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
     "dark_mode_theme": None,
