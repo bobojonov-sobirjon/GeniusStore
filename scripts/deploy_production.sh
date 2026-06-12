@@ -20,5 +20,8 @@ else
     echo "Warning: no geniusstore/gunicorn service found — restart your WSGI process manually."
 fi
 
+echo "==> verify static (must return CSS, not HTML login page)"
+curl -sI "http://127.0.0.1/static/vendor/adminlte/css/adminlte.min.css" | head -n 1 || true
+
 echo "==> done"
 echo "Hard-refresh admin in browser: Ctrl+F5"
