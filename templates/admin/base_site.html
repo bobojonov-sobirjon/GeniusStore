@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+/* Jazzmin related-object modal (+) — inline so production works after git pull without collectstatic */
+.modal.modal-wide .modal-dialog {
+    width: min(92vw, 960px) !important;
+    max-width: none !important;
+}
+.modal-wide .modal-body {
+    padding: 0 !important;
+    overflow: hidden !important;
+    min-height: 520px;
+}
+.modal-wide iframe.related-iframe,
+.modal-wide #related-modal-iframe {
+    display: block;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 520px !important;
+    min-height: 520px !important;
+    border: none;
+}
+body.popup .main-header,
+body.popup .main-sidebar,
+body.popup .main-footer,
+body.popup .content-header,
+body.popup .breadcrumb,
+body.popup #jazzy-actions .object-tools {
+    display: none !important;
+}
+body.popup .content-wrapper {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    min-height: auto !important;
+}
+body.popup .content,
+body.popup #content,
+body.popup #content-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1rem !important;
+}
+body.popup .col-lg-9,
+body.popup .col-lg-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+body.popup #jazzy-actions {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+</style>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+(function () {
+    'use strict';
+    if (!window.jQuery || document.body.className.indexOf('popup') !== -1) {
+        return;
+    }
+    (function ($) {
+        function fixRelatedModalIframe() {
+            $('iframe.related-iframe, #related-modal-iframe').each(function () {
+                this.style.display = 'block';
+                this.style.width = '100%';
+                this.style.minWidth = '100%';
+                this.style.height = '520px';
+                this.style.minHeight = '520px';
+                this.style.border = 'none';
+            });
+        }
+        $(document).on('shown.bs.modal', '[class*="related-modal-"]', fixRelatedModalIframe);
+        $(document).on('click', 'a.related-widget-wrapper-link, a.related-lookup', function () {
+            setTimeout(fixRelatedModalIframe, 50);
+            setTimeout(fixRelatedModalIframe, 300);
+        });
+    })(jQuery);
+})();
+</script>
+{% endblock %}
