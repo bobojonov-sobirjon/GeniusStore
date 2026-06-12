@@ -8,11 +8,14 @@ cd "$ROOT"
 echo "==> git pull"
 git pull origin main
 
+echo "==> pip install (jazzmin + deps must match requirements.txt)"
+pip install -r requirements.txt
+
 echo "==> STATIC_URL (must be /static/)"
 grep '^STATIC_URL' config/settings.py
 
-echo "==> collectstatic"
-python manage.py collectstatic --noinput
+echo "==> collectstatic (clear old Bootstrap 4 assets from staticfiles/)"
+python manage.py collectstatic --clear --noinput
 
 echo "==> restart app"
 if systemctl is-active --quiet geniusstore 2>/dev/null; then
@@ -24,7 +27,7 @@ else
 fi
 
 echo "==> verify"
-bash scripts/verify_admin_static.sh || true
+bash scripts/verify_admin_static.sh
 
 echo "==> done"
-echo "Hard-refresh admin in browser: Ctrl+F5"
+echo "Hard-refresh admin in browser: Ctrl+Shift+R"
