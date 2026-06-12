@@ -348,6 +348,9 @@ SESSION_COOKIE_HTTPONLY = True
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
+# Jazzmin related-modal (+) opens admin add form in iframe; default DENY blocks it.
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
