@@ -8,6 +8,7 @@ from django.utils.html import format_html
 from apps.common.media_urls import media_url
 from apps.store_core import models as m
 from apps.store_core.admin_forms import ProductImageForm
+from apps.store_core.category_specs import spec_field_names_for_category
 
 
 class WhaleStoreAdminMixin:
@@ -129,10 +130,19 @@ class SimTypeAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
 
 @admin.register(m.Color)
 class ColorAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
-    list_display = ('name', 'hex', 'created_at')
+    list_display = ('color_preview', 'name', 'hex', 'created_at')
     search_fields = ('name', 'hex')
     ordering = ('name',)
     fields = ('name', 'hex')
+
+    @admin.display(description='')
+    def color_preview(self, obj):
+        hex_color = obj.hex or '#cccccc'
+        return format_html(
+            '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;'
+            'background:{};border:1px solid #d1d5db;"></span>',
+            hex_color,
+        )
 
 
 @admin.register(m.Memory)
@@ -154,8 +164,11 @@ class ProductImageInline(admin.TabularInline):
     form = ProductImageForm
     extra = 1
     classes = ('whale-card',)
-    fields = ('preview', 'image', 'alt', 'sort_order', 'is_primary')
+    fields = ('preview', 'color', 'image', 'alt', 'sort_order', 'is_primary')
     readonly_fields = ('preview',)
+    autocomplete_fields = ('color',)
+    verbose_name = 'Фото'
+    verbose_name_plural = 'Изображения по цветам (для смены фото на сайте укажите цвет)'
 
     @admin.display(description='Превью')
     def preview(self, obj):
@@ -191,7 +204,8 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     ordering = ('-created_at',)
     prepopulated_fields = {'slug': ('title',)}
     inlines = (ProductImageInline, ProductVariantInline)
-    fieldsets = (
+
+    _BASE_FIELDSETS = (
         ('Основная информация', {
             'fields': ('title', 'article', 'description'),
             'classes': ('whale-card', 'whale-basic-info'),
@@ -200,34 +214,51 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
             'fields': ('brand', 'category'),
             'classes': ('whale-card',),
         }),
-        ('Дополнительные характеристики', {
-            'fields': (
-                'product_model', 'condition',
-                'type', 'product_class', 'line', 'series', 'system', 'version',
-                'diagonal', 'size', 'screen_type', 'resolution', 'refresh_rate',
-                'density', 'brightness', 'glass', 'aod',
-            ),
-            'classes': ('whale-card', 'whale-specs-grid'),
-        }),
         ('Настройки товара', {
             'fields': (('is_new', 'is_hit', 'is_bt'), 'is_available', 'rating', 'slug'),
             'classes': ('whale-card', 'whale-product-settings'),
         }),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        category_slug = None
+        if obj and obj.category_id:
+            category_slug = obj.category.slug
+        spec_names = spec_field_names_for_category(category_slug)
+        spec_fields = tuple(spec_names)
+        spec_title = 'Дополнительные характеристики'
+        if obj and obj.category_id:
+            spec_title = f'Характеристики — {obj.category.name}'
+        elif not obj:
+            spec_title = 'Дополнительные характеристики (после сохранения подстроятся под категорию)'
+
+        return (
+            self._BASE_FIELDSETS[0],
+            self._BASE_FIELDSETS[1],
+            (spec_title, {
+                'fields': spec_fields,
+                'classes': ('whale-card', 'whale-specs-grid'),
+                'description': (
+                    'Набор полей зависит от категории (смартфоны, пылесосы и т.д.). '
+                    'Память и цвет задаются во вкладке вариантов.'
+                ),
+            }),
+            self._BASE_FIELDSETS[2],
+        )
+
 
 @admin.register(m.ProductImage)
 class ProductImageAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     drawer_add = False
     form = ProductImageForm
-    list_display = ('preview_thumb', 'product', 'alt', 'sort_order', 'is_primary', 'created_at')
-    list_filter = ('is_primary', 'product__category', 'product__brand')
+    list_display = ('preview_thumb', 'product', 'color', 'alt', 'sort_order', 'is_primary', 'created_at')
+    list_filter = ('is_primary', 'color', 'product__category', 'product__brand')
     search_fields = ('product__title', 'product__slug', 'alt')
-    autocomplete_fields = ('product',)
+    autocomplete_fields = ('product', 'color')
     ordering = ('product__title', 'sort_order')
     readonly_fields = ('preview_thumb', 'created_at')
     fields = (
-        'product', 'image', 'preview_thumb',
+        'product', 'color', 'image', 'preview_thumb',
         'alt', 'sort_order', 'is_primary', 'created_at',
     )
 

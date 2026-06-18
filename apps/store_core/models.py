@@ -335,6 +335,16 @@ class ProductImage(models.Model):
     alt = models.TextField('Alt текст', blank=True, default='')
     sort_order = models.PositiveIntegerField('Порядок', default=0)
     is_primary = models.BooleanField('Главное фото', default=False)
+    color = models.ForeignKey(
+        'Color',
+        verbose_name='Цвет',
+        db_column='colorId',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='product_images',
+        help_text='Привязка к цвету: на сайте фото меняются при выборе цвета.',
+    )
     created_at = models.DateTimeField('Создано', auto_now_add=True)
 
     class Meta:

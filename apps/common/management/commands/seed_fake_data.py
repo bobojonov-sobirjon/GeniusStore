@@ -59,13 +59,14 @@ class Command(BaseCommand):
         sim_types = self._seed_sim_types()
         products = self._seed_products(categories, brands, models, conditions)
         variants = self._seed_variants(products, memories, colors, sim_types)
-        self._seed_product_images(products)
+        self._seed_product_images(products, variants)
         self._seed_orders(variants)
         self._seed_blog()
         self._seed_repair()
         self._seed_banners_and_info()
         self._seed_storefront(variants)
         self.stdout.write(self.style.SUCCESS('Fake data seeded successfully.'))
+        self.stdout.write('Demo product with color galleries: GET /api/product/slug/apple-iphone-13')
         self.stdout.write('Django admin: admin / admin123  (--with-superuser)')
         self.stdout.write('Store users: demo1@geniusstore.local / 12345678')
 
@@ -166,7 +167,7 @@ class Command(BaseCommand):
     def _seed_product_models(self) -> list[ProductModel]:
         names = [
             'Apple iPhone 17', 'Apple iPhone 17 Pro', 'Apple iPhone 17 Pro Max',
-            'Apple iPhone 16 Pro', 'Apple iPhone 16e', 'Apple iPhone 13 Pro',
+            'Apple iPhone 16 Pro', 'Apple iPhone 16e', 'Apple iPhone 13 Pro', 'Apple iPhone 13',
             'Samsung Galaxy S26 Ultra', 'Samsung Galaxy Z Fold7', 'Samsung Galaxy Z Fold 6',
             'Google Pixel 10 Pro XL', 'Google Pixel 9 Pro',
             'Xiaomi Redmi Note 14 Pro', 'Sony WH-1000XM6', 'Dyson V15 Detect',
@@ -194,8 +195,11 @@ class Command(BaseCommand):
 
     def _seed_colors(self) -> list[Color]:
         rows = [
+            ('Green', '#34C759'),
+            ('Blue', '#007AFF'),
+            ('Starlight', '#F5F0E8'),
+            ('Midnight', '#1C1C1E'),
             ('Silver', '#C0C0C0'),
-            ('Blue', '#2563EB'),
             ('Orange', '#F97316'),
             ('Cosmic Orange', '#EA580C'),
             ('Черный', '#0F0F0F'),
@@ -204,6 +208,8 @@ class Command(BaseCommand):
             ('Зеленый', '#2E8B57'),
             ('Титановый', '#8C7C6B'),
             ('Фиолетовый', '#7C3AED'),
+            ('Red', '#FF3B30'),
+            ('Purple', '#AF52DE'),
         ]
         out = []
         for name, hex_code in rows:
@@ -213,6 +219,12 @@ class Command(BaseCommand):
                 obj.save(update_fields=['hex'])
             out.append(obj)
         return out
+
+    def _color_by_name(self, colors: list[Color], name: str) -> Color | None:
+        for c in colors:
+            if c.name == name:
+                return c
+        return None
 
     def _seed_sim_types(self) -> list[SimType]:
         out = []
@@ -234,6 +246,7 @@ class Command(BaseCommand):
         by_condition = {x.name: x for x in conditions}
 
         products_data = [
+            ('Apple iPhone 13', 'apple-iphone-13', 'Смартфоны', 'Apple', 'Apple iPhone 13', 'Новый', True, True),
             ('Apple iPhone 17 Pro Max', 'apple-iphone-17-pro-max', 'Смартфоны', 'Apple', 'Apple iPhone 17 Pro Max', 'Новый', True, True),
             ('Apple iPhone 17 Pro', 'apple-iphone-17-pro', 'Смартфоны', 'Apple', 'Apple iPhone 17 Pro', 'Новый', True, True),
             ('Apple iPhone 17', 'apple-iphone-17', 'Смартфоны', 'Apple', 'Apple iPhone 17', 'Новый', True, False),
@@ -285,26 +298,120 @@ class Command(BaseCommand):
                     'is_new': is_new,
                     'is_hit': is_hit,
                     'is_bt': 'AirPods' in title or 'Marshall' in title,
-                    'type': 'Смартфон' if category.name == 'Смартфоны' else category.name,
-                    'product_class': 'Premium' if is_hit else 'Standard',
-                    'line': brand_name,
-                    'series': model_name.split()[-1] if model_name else '',
-                    'system': 'iOS' if brand_name == 'Apple' else 'Android',
-                    'diagonal': '6.9' if 'iPhone' in title else '6.7',
-                    'size': 'standard',
-                    'screen_type': 'OLED',
-                    'resolution': '2796x1290',
-                    'refresh_rate': '120 Hz',
-                    'density': '460 ppi',
-                    'brightness': '2000 nits',
-                    'glass': 'Ceramic Shield' if brand_name == 'Apple' else 'Gorilla Glass',
-                    'aod': 'Да' if 'iPhone' in title else 'Нет',
+                    **self._product_specs_for_category(category.name, title, brand_name, model_name),
                 },
             )
-            out.append(obj)
             if not created:
-                continue
+                specs = self._product_specs_for_category(category.name, title, brand_name, model_name)
+                for key, val in specs.items():
+                    if val is not None:
+                        setattr(obj, key, val)
+                obj.save()
+            out.append(obj)
         return list(Product.objects.all())
+
+    def _product_specs_for_category(
+        self,
+        category_name: str,
+        title: str,
+        brand_name: str,
+        model_name: str,
+    ) -> dict:
+        """Category-specific characteristics for admin + API specifications."""
+        base = {
+            'product_class': 'Premium',
+            'line': brand_name,
+            'series': model_name.split()[-1] if model_name else '',
+        }
+        if category_name == 'Смартфоны':
+            return {
+                **base,
+                'type': 'Смартфон',
+                'system': 'iOS' if brand_name == 'Apple' else 'Android',
+                'diagonal': '6.1' if 'iPhone 13' in title else '6.7',
+                'size': 'standard',
+                'screen_type': 'OLED',
+                'resolution': '2532×1170' if 'iPhone 13' in title else '2796×1290',
+                'refresh_rate': '60 Hz' if 'iPhone 13' in title else '120 Hz',
+                'density': '460 ppi',
+                'brightness': '1200 nits',
+                'glass': 'Ceramic Shield' if brand_name == 'Apple' else 'Gorilla Glass',
+                'aod': 'Да' if brand_name == 'Apple' else 'Нет',
+            }
+        if category_name == 'Пылесосы':
+            return {
+                **base,
+                'type': 'Пылесос',
+                'system': 'Циклон',
+                'version': 'V15 Detect',
+                'line': 'V-series',
+                'diagonal': None,
+                'screen_type': None,
+                'resolution': None,
+                'refresh_rate': None,
+                'density': None,
+                'brightness': None,
+                'glass': None,
+                'aod': None,
+            }
+        if category_name == 'Наушники':
+            return {
+                **base,
+                'type': 'Наушники',
+                'line': title.split()[0] if title else brand_name,
+                'series': 'Pro' if 'Pro' in title else 'Standard',
+                'diagonal': None,
+                'screen_type': None,
+                'resolution': None,
+                'refresh_rate': None,
+                'density': None,
+                'brightness': None,
+                'glass': None,
+                'aod': None,
+            }
+        if category_name == 'Игровые консоли':
+            return {
+                **base,
+                'type': 'Консоль',
+                'system': 'SteamOS' if 'Steam' in title else 'PlayStation OS',
+                'version': 'OLED' if 'OLED' in title else 'Slim',
+                'diagonal': '7"' if 'Steam' in title else None,
+                'screen_type': 'OLED' if 'OLED' in title else None,
+                'resolution': '1280×800' if 'Steam' in title else '4K',
+                'refresh_rate': '90 Hz' if 'Steam' in title else '120 Hz',
+                'density': None,
+                'brightness': None,
+                'glass': None,
+                'aod': None,
+            }
+        if category_name == 'Аксессуары':
+            return {
+                **base,
+                'type': 'Умная колонка' if 'Station' in title else 'Аксессуар',
+                'size': 'compact',
+                'line': brand_name,
+                'diagonal': None,
+                'screen_type': None,
+                'resolution': None,
+                'refresh_rate': None,
+                'density': None,
+                'brightness': None,
+                'glass': None,
+                'aod': None,
+            }
+        return {
+            **base,
+            'type': category_name,
+            'diagonal': None,
+            'size': 'standard',
+            'screen_type': None,
+            'resolution': None,
+            'refresh_rate': None,
+            'density': None,
+            'brightness': None,
+            'glass': None,
+            'aod': None,
+        }
 
     def _seed_variants(
         self,
@@ -315,37 +422,86 @@ class Command(BaseCommand):
     ) -> list[ProductVariant]:
         out = []
         sim_main = sim_types[0]
+        memory_128 = next((m for m in memories if '128' in m.name), memories[0])
+        iphone_palette = [
+            self._color_by_name(colors, 'Green'),
+            self._color_by_name(colors, 'Blue'),
+            self._color_by_name(colors, 'Starlight'),
+            self._color_by_name(colors, 'Midnight'),
+        ]
+        iphone_palette = [c for c in iphone_palette if c]
+
         for p in products:
-            variant_count = 3 if p.category.name == 'Смартфоны' else 2
+            if p.category.name == 'Смартфоны':
+                palette = (
+                    iphone_palette
+                    if p.slug == 'apple-iphone-13'
+                    else [colors[(i + p.id) % len(colors)] for i in range(4)]
+                )
+                for i, color in enumerate(palette):
+                    memory = memory_128 if p.slug == 'apple-iphone-13' else memories[min(i, len(memories) - 1)]
+                    base_price = 43500.0 if p.slug == 'apple-iphone-13' else float(randint(49999, 149999))
+                    discount = 0 if p.slug == 'apple-iphone-13' else choice([0, 5, 8, 10])
+                    old_price = None if p.slug == 'apple-iphone-13' else float(base_price + randint(2000, 8000))
+                    obj, created = ProductVariant.objects.get_or_create(
+                        product=p,
+                        memory=memory,
+                        color=color,
+                        defaults={
+                            'price': base_price,
+                            'old_price': old_price,
+                            'discount': discount or None,
+                            'is_available': True,
+                            'description': f'{p.title} / {memory.name} / {color.name}',
+                            'images': None,
+                            'diagonal': p.diagonal or '6.1',
+                            'size': p.size or 'standard',
+                            'sim_type': sim_main,
+                        },
+                    )
+                    if not created:
+                        obj.price = base_price
+                        obj.old_price = old_price
+                        obj.discount = discount or None
+                        obj.images = None
+                        obj.is_available = True
+                        obj.save()
+                    out.append(obj)
+                    for st in sim_types:
+                        ProductVariantSimType.objects.get_or_create(
+                            product_variant=obj,
+                            sim_type=st,
+                            defaults={'price': round(obj.price + uniform(0, 200), 2)},
+                        )
+                continue
+
+            variant_count = 2
             for i in range(variant_count):
                 memory = memories[min(i + (p.id % 2), len(memories) - 1)]
                 color = colors[(i + p.id) % len(colors)]
-                base_price = randint(2999, 8999) if p.category.name == 'Смартфоны' else randint(499, 4999)
+                base_price = float(randint(499, 4999))
                 discount = choice([0, 5, 8, 10, 12, 15])
                 old_price = float(base_price + randint(200, 800)) if discount else None
                 defaults = {
                     'memory': memory,
                     'color': color,
-                    'price': float(base_price),
+                    'price': base_price,
                     'old_price': old_price,
                     'discount': discount or None,
                     'is_available': choice([True, True, True, False]),
                     'description': f'{p.title} / {memory.name} / {color.name}',
-                    'images': [
-                        {'id': f'{p.slug}-{i}-1', 'url': f'/uploads/image/{p.slug}-{i}-1.png'},
-                        {'id': f'{p.slug}-{i}-2', 'url': f'/uploads/image/{p.slug}-{i}-2.png'},
-                    ],
-                    'diagonal': p.diagonal or '6.7',
+                    'images': None,
+                    'diagonal': p.diagonal,
                     'size': p.size or 'standard',
                     'sim_type': sim_main,
                 }
-                obj, _ = ProductVariant.objects.get_or_create(
+                obj, created = ProductVariant.objects.get_or_create(
                     product=p,
                     memory=memory,
                     color=color,
                     defaults=defaults,
                 )
-                if obj.price == 0:
+                if not created:
                     for key, val in defaults.items():
                         setattr(obj, key, val)
                     obj.save()
@@ -358,16 +514,46 @@ class Command(BaseCommand):
                     )
         return out
 
-    def _seed_product_images(self, products: list[Product]) -> None:
+    def _seed_product_images(self, products: list[Product], variants: list[ProductVariant]) -> None:
+        """Gallery images linked to color (Whale Store: photos change when color is selected)."""
+        variants_by_product: dict[int, list[ProductVariant]] = {}
+        for v in variants:
+            variants_by_product.setdefault(v.product_id, []).append(v)
+
         for p in products:
+            product_variants = variants_by_product.get(p.id, [])
+            seen_colors: dict[int, Color] = {}
+            for v in product_variants:
+                if v.color_id and v.color_id not in seen_colors:
+                    seen_colors[v.color_id] = v.color
+
+            if seen_colors:
+                for color_id, color in seen_colors.items():
+                    slug_color = color.name.lower().replace(' ', '-').replace('/', '-')
+                    image_count = 4 if p.slug == 'apple-iphone-13' else 3
+                    for i in range(image_count):
+                        path = f'uploads/image/demo-{p.slug}-{slug_color}-{i + 1}.png'
+                        ProductImage.objects.update_or_create(
+                            product=p,
+                            color_id=color_id,
+                            sort_order=i,
+                            defaults={
+                                'image': path,
+                                'alt': f'{p.title} — {color.name}',
+                                'is_primary': i == 0,
+                            },
+                        )
+                continue
+
             for i in range(2):
-                path = f'uploads/image/demo-{p.slug}-{i + 1}.png'
-                ProductImage.objects.get_or_create(
+                path = f'uploads/image/demo-{p.slug}-shared-{i + 1}.png'
+                ProductImage.objects.update_or_create(
                     product=p,
-                    image=path,
+                    color_id=None,
+                    sort_order=i,
                     defaults={
+                        'image': path,
                         'alt': p.title,
-                        'sort_order': i,
                         'is_primary': i == 0,
                     },
                 )

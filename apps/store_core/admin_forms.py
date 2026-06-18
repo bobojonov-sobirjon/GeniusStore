@@ -8,7 +8,7 @@ from apps.store_core.models import ProductImage
 class ProductImageForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ('image', 'alt', 'sort_order', 'is_primary')
+        fields = ('color', 'image', 'alt', 'sort_order', 'is_primary')
 
     def clean(self):
         cleaned = super().clean()
