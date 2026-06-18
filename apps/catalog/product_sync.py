@@ -10,7 +10,9 @@ from django.db.models import Prefetch, Q
 from django.utils import timezone
 
 from apps.catalog.serialization import (
+    ProductSelection,
     _variant_qs,
+    parse_product_selection,
     product_list_prefetch,
     product_to_dict,
     variant_to_dict,
@@ -253,7 +255,7 @@ def delete_product(pid: int) -> None:
     Product.objects.filter(pk=pid).delete()
 
 
-def get_product(pid: int) -> dict | None:
+def get_product(pid: int, selection: ProductSelection | None = None, request=None) -> dict | None:
     p = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
         .prefetch_related(*product_list_prefetch())
@@ -262,10 +264,16 @@ def get_product(pid: int) -> dict | None:
     )
     if not p:
         return None
-    return product_to_dict(p, variants=list(p.variants.all()))
+    variants = list(p.variants.all())
+    sel = selection if selection is not None else ProductSelection()
+    return product_to_dict(p, variants=variants, request=request, selection=sel)
 
 
-def get_product_by_slug(slug: str) -> dict | None:
+def get_product_by_slug(
+    slug: str,
+    selection: ProductSelection | None = None,
+    request=None,
+) -> dict | None:
     p = (
         Product.objects.select_related('brand', 'category', 'condition', 'product_model')
         .prefetch_related(*product_list_prefetch())
@@ -274,7 +282,9 @@ def get_product_by_slug(slug: str) -> dict | None:
     )
     if not p:
         return None
-    return product_to_dict(p, variants=list(p.variants.all()))
+    variants = list(p.variants.all())
+    sel = selection if selection is not None else ProductSelection()
+    return product_to_dict(p, variants=variants, request=request, selection=sel)
 
 
 def list_products_page(page: int, limit: int) -> dict:

@@ -4,7 +4,7 @@ from apps.common.async_db import db_sync
 from asgiref.sync import sync_to_async
 from django.core.mail import send_mail
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny
@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from apps.common.views import APIView
 
 from apps.catalog import product_sync
-from apps.catalog.serialization import product_to_dict
+from apps.catalog.serialization import parse_product_selection, product_to_dict
 from apps.common.integrations.telegram import telegram_send_markdown
 from apps.common.openapi_requests import (
     REQ_HELP_FORM,
@@ -212,10 +212,51 @@ class ProductSlugDetailView(APIView):
 
     @extend_schema(
         summary='Карточка товара по slug',
-        description='Уникальный slug товара. Возвращает товар с brand, category, condition, model и массивом variants (память, цвет, simTypes).',
+        description=(
+            'Уникальный slug товара. Возвращает товар с brand, category, condition, model, '
+            'массивом `colors` (цвет → фото → память/цена), `variants` и `selectedVariant`.\n\n'
+            '**Фильтр варианта (query, опционально):** передайте `colorId`, `memoryId`, `simTypeId` — '
+            'сервер подберёт вариант, обновит `images`, `specifications` и `selectedVariant`. '
+            'Без параметров выбирается первый вариант.\n\n'
+            'Пример: `?colorId=2&memoryId=1&simTypeId=40b098b1-d719-4590-b235-20370c2ae3bf`'
+        ),
+        parameters=[
+            OpenApiParameter(
+                'colorId',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID цвета (из `colors[].id` или `variants[].colorId`)',
+            ),
+            OpenApiParameter(
+                'memoryId',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID памяти (из `colors[].memories[].memoryId`)',
+            ),
+            OpenApiParameter(
+                'simTypeId',
+                OpenApiTypes.UUID,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID типа SIM (из `selectedVariant.simTypes[].simTypeId`); меняет цену варианта',
+            ),
+        ],
     )
     async def get(self, request, slug: str):
-        data = await sync_to_async(product_sync.get_product_by_slug)(slug)
+        try:
+            selection = parse_product_selection(request.query_params)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        try:
+            data = await sync_to_async(product_sync.get_product_by_slug)(
+                slug,
+                selection=selection,
+                request=request,
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
         if not data:
             raise NotFound()
         return Response(data)
@@ -227,10 +268,47 @@ class ProductDetailView(APIView):
     @extend_schema(
         tags=['Товары — Витрина'],
         summary='Карточка товара по числовому id',
-        description='Полный объект товара как в Nest (бренд, категория, варианты и т.д.).',
+        description=(
+            'Полный объект товара как в Nest (бренд, категория, варианты и т.д.). '
+            'Поддерживает те же query-параметры `colorId`, `memoryId`, `simTypeId`, что и `/product/slug/{slug}`.'
+        ),
+        parameters=[
+            OpenApiParameter(
+                'colorId',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID цвета',
+            ),
+            OpenApiParameter(
+                'memoryId',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID памяти',
+            ),
+            OpenApiParameter(
+                'simTypeId',
+                OpenApiTypes.UUID,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ID типа SIM',
+            ),
+        ],
     )
     async def get(self, request, pk: int):
-        data = await sync_to_async(product_sync.get_product)(int(pk))
+        try:
+            selection = parse_product_selection(request.query_params)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        try:
+            data = await sync_to_async(product_sync.get_product)(
+                int(pk),
+                selection=selection,
+                request=request,
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
         if not data:
             raise NotFound()
         return Response(data)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import Any
 
 from django.db.models import Prefetch
@@ -202,10 +203,112 @@ def _build_color_options(
     return list(by_color.values())
 
 
+@dataclass(frozen=True)
+class ProductSelection:
+    color_id: int | None = None
+    memory_id: int | None = None
+    sim_type_id: str | None = None
+
+    @property
+    def is_filtered(self) -> bool:
+        return any(v is not None for v in (self.color_id, self.memory_id, self.sim_type_id))
+
+
+def parse_product_selection(query_params) -> ProductSelection:
+    def _int_param(key: str) -> int | None:
+        raw = query_params.get(key)
+        if raw in (None, ''):
+            return None
+        try:
+            return int(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f'Некорректный параметр {key}: ожидается число') from exc
+
+    sim_raw = query_params.get('simTypeId')
+    sim_type_id = None if sim_raw in (None, '') else str(sim_raw).strip()
+    return ProductSelection(
+        color_id=_int_param('colorId'),
+        memory_id=_int_param('memoryId'),
+        sim_type_id=sim_type_id or None,
+    )
+
+
+def resolve_selected_variant(
+    variants: list[ProductVariant],
+    selection: ProductSelection,
+) -> ProductVariant | None:
+    if not variants:
+        return None
+    pool = variants
+    if selection.color_id is not None:
+        pool = [v for v in pool if v.color_id == selection.color_id]
+    if selection.memory_id is not None:
+        pool = [v for v in pool if v.memory_id == selection.memory_id]
+    if not pool:
+        return None
+    return pool[0]
+
+
+def _apply_sim_type_price(variant_data: dict[str, Any], sim_type_id: str) -> dict[str, Any]:
+    for link in variant_data.get('simTypes') or []:
+        if str(link.get('simTypeId')) == sim_type_id:
+            variant_data = dict(variant_data)
+            variant_data['price'] = link.get('price')
+            sim = link.get('simType')
+            if sim:
+                variant_data['simType'] = sim
+                variant_data['simTypeId'] = sim.get('id')
+            return variant_data
+    return variant_data
+
+
+def apply_product_selection(
+    data: dict[str, Any],
+    product: Product,
+    variants: list[ProductVariant],
+    selection: ProductSelection,
+    *,
+    request=None,
+) -> dict[str, Any]:
+    """Apply color/memory/sim filters and expose selectedVariant for the product card."""
+    if selection.is_filtered:
+        selected = resolve_selected_variant(variants, selection)
+        if selected is None:
+            parts = []
+            if selection.color_id is not None:
+                parts.append(f'colorId={selection.color_id}')
+            if selection.memory_id is not None:
+                parts.append(f'memoryId={selection.memory_id}')
+            raise ValueError('Вариант не найден: ' + ', '.join(parts))
+    else:
+        selected = variants[0] if variants else None
+
+    out = dict(data)
+    out['selection'] = {
+        'colorId': selection.color_id,
+        'memoryId': selection.memory_id,
+        'simTypeId': selection.sim_type_id,
+    }
+
+    if not selected:
+        out['selectedVariant'] = None
+        return out
+
+    variant_data = variant_to_dict(selected, product=product, request=request)
+    if selection.sim_type_id:
+        variant_data = _apply_sim_type_price(variant_data, selection.sim_type_id)
+
+    out['selectedVariant'] = variant_data
+    out['images'] = variant_data['images']
+    out['specifications'] = variant_data['specifications']
+    return out
+
+
 def product_to_dict(
     p: Product,
     variants: list[ProductVariant] | None = None,
     request=None,
+    selection: ProductSelection | None = None,
 ) -> dict[str, Any]:
     if variants is None:
         variants = list(_variant_qs().filter(product=p))
@@ -220,7 +323,7 @@ def product_to_dict(
     condition = getattr(p, 'condition', None) if p.condition_id else None
     model = getattr(p, 'product_model', None) if p.product_model_id else None
     category_slug = category.slug if category else None
-    return {
+    base = {
         'id': p.id,
         'title': p.title,
         'rating': _json_safe(p.rating),
@@ -272,3 +375,6 @@ def product_to_dict(
             variant_to_dict(v, product=p, request=request) for v in variants
         ],
     }
+    if selection is not None:
+        return apply_product_selection(base, p, variants, selection, request=request)
+    return base
