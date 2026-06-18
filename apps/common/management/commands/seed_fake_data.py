@@ -128,10 +128,10 @@ class Command(BaseCommand):
         ]
         out = []
         for name, slug in rows:
-            obj, _ = Category.objects.get_or_create(name=name, defaults={'slug': slug, 'icon': ''})
-            if not obj.slug:
-                obj.slug = slug
-                obj.save(update_fields=['slug'])
+            obj, _ = Category.objects.update_or_create(
+                slug=slug,
+                defaults={'name': name, 'icon': ''},
+            )
             out.append(obj)
         return out
 
@@ -608,7 +608,7 @@ class Command(BaseCommand):
             ('Обзор Samsung Galaxy Z Fold7', 'obzor-samsung-galaxy-z-fold7'),
         ]
         for idx, (title, slug) in enumerate(posts):
-            blog, _ = Blog.objects.get_or_create(
+            blog, _ = Blog.objects.update_or_create(
                 slug=slug,
                 defaults={
                     'title': title,
@@ -628,11 +628,11 @@ class Command(BaseCommand):
                 )
 
     def _seed_repair(self) -> None:
-        sb_apple, _ = ServiceBrand.objects.get_or_create(
+        sb_apple, _ = ServiceBrand.objects.update_or_create(
             slug='apple-service',
             defaults={'name': 'Apple', 'image': 'uploads/image/service-apple.png'},
         )
-        sb_samsung, _ = ServiceBrand.objects.get_or_create(
+        sb_samsung, _ = ServiceBrand.objects.update_or_create(
             slug='samsung-service',
             defaults={'name': 'Samsung', 'image': 'uploads/image/service-samsung.png'},
         )
@@ -643,7 +643,10 @@ class Command(BaseCommand):
             ('Galaxy S26 Ultra', 'galaxy-s26-ultra', sb_samsung),
             ('Galaxy Z Fold7', 'galaxy-z-fold7', sb_samsung),
         ]:
-            sm, _ = ServiceModel.objects.get_or_create(slug=slug, defaults={'name': name, 'service_brand': brand})
+            sm, _ = ServiceModel.objects.update_or_create(
+                slug=slug,
+                defaults={'name': name, 'service_brand': brand},
+            )
             models.append(sm)
         for sm in models:
             for svc_name, suffix, labor in [
@@ -652,7 +655,7 @@ class Command(BaseCommand):
                 ('Ремонт камеры', 'camera', 8500),
                 ('Замена разъёма зарядки', 'port', 5500),
             ]:
-                Service.objects.get_or_create(
+                Service.objects.update_or_create(
                     slug=f'{sm.slug}-{suffix}',
                     defaults={
                         'name': svc_name,
@@ -678,7 +681,7 @@ class Command(BaseCommand):
             ),
         ]
         for idx, (title, description) in enumerate(banners):
-            Banner.objects.get_or_create(
+            Banner.objects.update_or_create(
                 title=title,
                 defaults={
                     'description': description,
@@ -696,7 +699,7 @@ class Command(BaseCommand):
             ('Рассрочка 0%', 'Без переплат на 12 месяцев'),
         ]
         for name, description in advantages:
-            Info.objects.get_or_create(name=name, defaults={'description': description})
+            Info.objects.update_or_create(name=name, defaults={'description': description})
 
     def _seed_storefront(self, variants: list[ProductVariant]) -> None:
         users = list(StoreUser.objects.all())
@@ -721,7 +724,7 @@ class Command(BaseCommand):
             ('Сергей', 'Samsung Galaxy Z Fold7 — мечта сбылась!', 5, Review.SOURCE_AVITO),
         ]
         for idx, (author, text, rating, source) in enumerate(reviews):
-            Review.objects.get_or_create(
+            Review.objects.update_or_create(
                 author_name=author,
                 text=text,
                 source=source,
