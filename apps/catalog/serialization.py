@@ -8,6 +8,7 @@ from django.db.models import Prefetch
 
 from apps.common.media_urls import media_url, media_url_images
 from apps.store_core.category_specs import build_specifications, spec_field_names_for_category
+from apps.store_core.product_characteristics import build_characteristic_groups, spec_groups_prefetch
 from apps.store_core.models import Product, ProductImage, ProductVariant, ProductVariantSimType
 
 
@@ -167,6 +168,7 @@ def product_list_prefetch() -> list[Prefetch]:
             'product_images',
             queryset=ProductImage.objects.select_related('color').order_by('sort_order', '-created_at'),
         ),
+        spec_groups_prefetch(),
     ]
 
 
@@ -301,6 +303,11 @@ def apply_product_selection(
     out['selectedVariant'] = variant_data
     out['images'] = variant_data['images']
     out['specifications'] = variant_data['specifications']
+    out['characteristicGroups'] = build_characteristic_groups(
+        product,
+        selected,
+        sim_type_id=selection.sim_type_id,
+    )
     return out
 
 
@@ -371,6 +378,7 @@ def product_to_dict(
         'colors': _build_color_options(variants, p, request=request),
         'specFields': list(spec_field_names_for_category(category_slug)),
         'specifications': build_specifications(p, default_variant),
+        'characteristicGroups': build_characteristic_groups(p, default_variant),
         'variants': [
             variant_to_dict(v, product=p, request=request) for v in variants
         ],

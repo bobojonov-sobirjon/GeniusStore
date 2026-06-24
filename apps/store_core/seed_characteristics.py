@@ -1,0 +1,140 @@
+"""Demo characteristic groups for seed command."""
+from __future__ import annotations
+
+from apps.store_core.models import Product, ProductSpecGroup, ProductSpecItem
+
+
+def _add_group(product: Product, sort_order: int, title: str, rows: list) -> None:
+    group, _ = ProductSpecGroup.objects.update_or_create(
+        product=product,
+        title=title,
+        defaults={'sort_order': sort_order},
+    )
+    for item_sort, row in enumerate(rows):
+        if len(row) == 3:
+            label, values, source = row
+        elif len(row) == 2:
+            label, values = row
+            source = ''
+        else:
+            continue
+        ProductSpecItem.objects.update_or_create(
+            group=group,
+            label=label,
+            defaults={
+                'sort_order': item_sort,
+                'values': values if isinstance(values, list) else [values],
+                'variant_source': source or '',
+            },
+        )
+
+
+def seed_iphone_13_characteristics(product: Product) -> None:
+    """Whale Store style grouped specs for demo product apple-iphone-13."""
+    _add_group(product, 0, 'Основные характеристики', [
+        ('Серия', [], ProductSpecItem.VariantSource.SERIES),
+        ('Память', [], ProductSpecItem.VariantSource.MEMORY),
+        ('Цвет', [], ProductSpecItem.VariantSource.COLOR),
+        ('SIM-карта', [], ProductSpecItem.VariantSource.SIM),
+        ('Операционная система', [], ProductSpecItem.VariantSource.SYSTEM),
+    ])
+    _add_group(product, 1, 'Процессор', [
+        ('Процессор', ['Apple A15 Bionic']),
+    ])
+    _add_group(product, 2, 'Корпус', [
+        ('Материал', ['алюминий']),
+        ('Высота, мм', ['146.7']),
+        ('Ширина, мм', ['71.5']),
+        ('Толщина, мм', ['7.65']),
+        ('Вес, г', ['173']),
+    ])
+    _add_group(product, 3, 'Дисплей', [
+        ('Диагональ', ['6.1"']),
+        ('Разрешение', ['2532×1170']),
+        ('Тип дисплея', ['Super Retina XDR OLED']),
+        ('Плотность пикселей на дюйм', ['460 пикс/дюйм']),
+        ('Яркость', ['1200 нит']),
+        ('Частота обновления экрана', ['60 Гц']),
+        ('Стекло', ['Ceramic Shield']),
+        ('Always On Display', ['Нет']),
+    ])
+    _add_group(product, 4, 'Камера', [
+        ('Разрешение камеры', ['12 Мп + 12 Мп']),
+        ('Диафрагма', ['основная: f/1.6, сверхширокоугольная: f/2.4']),
+        ('Зум (фото)', ['цифровой 5x', 'оптический 2x']),
+        ('Защита объектива', ['сапфировое стекло']),
+        ('Функции камеры', [
+            'ночной режим',
+            'Smart HDR 4',
+            'панорамная съёмка',
+            'серийная съёмка',
+            'портретный режим',
+        ]),
+    ])
+    _add_group(product, 5, 'Фронтальная камера', [
+        ('Разрешение фронтальной камеры', ['12 Мп']),
+        ('Диафрагма фронтальной камеры', ['f/2.2']),
+        ('Разрешение видео фронтальной камеры', [
+            'HD-видео 1080p с частотой 25, 30 или 60 кадров/с',
+        ]),
+        ('Функции фронтальной камеры', [
+            'Smart HDR 4',
+            'кинематографическая стабилизация видео',
+            'Retina Flash с True Tone',
+            'серийная съёмка',
+        ]),
+    ])
+    _add_group(product, 6, 'Запись видео', [
+        ('Разрешение видео', [
+            'HD-видео 1080p с частотой 25, 30 или 60 кадров/с',
+            '4K с частотой 24, 25, 30 или 60 кадров/с',
+        ]),
+        ('Разрешение замедленного видео', [
+            'HD-видео 1080p с частотой 120 и 240 кадров/с',
+        ]),
+        ('Функции видео', [
+            'стабилизация видео',
+            'фокусировка касанием',
+            'распознавание лиц',
+            'форматы записанного видео: HEVC и H.264',
+        ]),
+    ])
+    _add_group(product, 7, 'Питание', [
+        ('Тип аккумулятора', ['Li-Ion']),
+        ('Воспроизведение видео', ['до 19 часов']),
+    ])
+    _add_group(product, 8, 'Связь и подключение', [
+        ('Сотовая и беспроводная связь', [
+            '5G (sub-6 GHz)',
+            'Gigabit Class LTE',
+            'Wi-Fi 6 (802.11ax)',
+            'Bluetooth 5.0',
+            'NFC',
+        ]),
+        ('Навигация', ['GPS', 'ГЛОНАСС', 'Galileo', 'QZSS', 'BeiDou']),
+        ('Разъёмы', ['Lightning']),
+    ])
+    _add_group(product, 9, 'Заводские данные', [
+        ('Страна производителя', ['Китай']),
+        ('Гарантия, мес', ['12']),
+    ])
+    _add_group(product, 10, 'Дополнительно', [
+        ('Тип разблокировки', ['Face ID']),
+        ('Датчики', [
+            'акселерометр',
+            'гироскоп',
+            'барометр',
+            'датчик освещённости',
+            'датчик приближения',
+        ]),
+        ('В комплекте', [
+            'кабель USB-C — Lightning (1 м)',
+            'руководство пользователя',
+        ]),
+    ])
+
+
+def seed_product_characteristics(products: list[Product]) -> None:
+    for product in products:
+        if product.slug == 'apple-iphone-13':
+            seed_iphone_13_characteristics(product)

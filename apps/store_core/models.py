@@ -363,6 +363,81 @@ class ProductImage(models.Model):
         return super().delete(*args, **kwargs)
 
 
+class ProductSpecGroup(models.Model):
+    """Main characteristic section on product page (e.g. Корпус, Камера)."""
+
+    id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(
+        Product,
+        verbose_name='Товар',
+        db_column='productId',
+        on_delete=models.CASCADE,
+        related_name='spec_groups',
+    )
+    title = models.TextField('Группа характеристик')
+    sort_order = models.PositiveIntegerField('Порядок группы', default=0)
+    created_at = models.DateTimeField('Создано', auto_now_add=True)
+
+    class Meta:
+        db_table = 'ProductSpecGroup'
+        verbose_name = 'Группа характеристик'
+        verbose_name_plural = 'Группы характеристик'
+        ordering = ('sort_order', 'title')
+        managed = True
+
+    def __str__(self) -> str:
+        return f'{self.title} ({self.product_id})'
+
+
+class ProductSpecItem(models.Model):
+    """Sub-characteristic row inside a group (label + one or more values)."""
+
+    class VariantSource(models.TextChoices):
+        MANUAL = '', 'Вручную'
+        MEMORY = 'memory', 'Память (вариант)'
+        COLOR = 'color', 'Цвет (вариант)'
+        SIM = 'sim', 'SIM (вариант)'
+        SERIES = 'series', 'Серия'
+        MODEL = 'model', 'Модель'
+        CONDITION = 'condition', 'Состояние'
+        SYSTEM = 'system', 'Операционная система'
+
+    id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(
+        ProductSpecGroup,
+        verbose_name='Группа',
+        db_column='groupId',
+        on_delete=models.CASCADE,
+        related_name='items',
+    )
+    label = models.TextField('Название')
+    values = models.JSONField(
+        'Значения',
+        default=list,
+        blank=True,
+        help_text='Список строк. Несколько значений — маркированный список на сайте.',
+    )
+    variant_source = models.CharField(
+        'Источник из варианта',
+        max_length=32,
+        choices=VariantSource.choices,
+        blank=True,
+        default='',
+        help_text='Если выбрано — значения подставляются из товара/варианта автоматически.',
+    )
+    sort_order = models.PositiveIntegerField('Порядок', default=0)
+
+    class Meta:
+        db_table = 'ProductSpecItem'
+        verbose_name = 'Характеристика'
+        verbose_name_plural = 'Характеристики'
+        ordering = ('sort_order', 'label')
+        managed = True
+
+    def __str__(self) -> str:
+        return self.label
+
+
 class ProductVariant(PrismaModel):
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(

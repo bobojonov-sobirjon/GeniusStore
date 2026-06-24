@@ -7,7 +7,7 @@ from django.utils.html import format_html
 
 from apps.common.media_urls import media_url
 from apps.store_core import models as m
-from apps.store_core.admin_forms import ProductImageForm
+from apps.store_core.admin_forms import ProductImageForm, ProductSpecItemForm
 from apps.store_core.category_specs import spec_field_names_for_category
 
 
@@ -194,6 +194,42 @@ class ProductVariantInline(admin.StackedInline):
     autocomplete_fields = ('memory', 'color', 'sim_type')
 
 
+class ProductSpecItemInline(admin.TabularInline):
+    model = m.ProductSpecItem
+    form = ProductSpecItemForm
+    extra = 1
+    classes = ('whale-card',)
+    fields = ('sort_order', 'label', 'variant_source', 'values_text')
+    ordering = ('sort_order', 'label')
+    verbose_name = 'Строка'
+    verbose_name_plural = 'Строки характеристик'
+
+
+class ProductSpecGroupInline(admin.StackedInline):
+    model = m.ProductSpecGroup
+    extra = 0
+    show_change_link = True
+    classes = ('whale-card',)
+    fields = ('sort_order', 'title')
+    ordering = ('sort_order', 'title')
+    verbose_name = 'Группа'
+    verbose_name_plural = (
+        'Характеристики (группы) — нажмите на группу, чтобы добавить строки с значениями'
+    )
+
+
+@admin.register(m.ProductSpecGroup)
+class ProductSpecGroupAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
+    drawer_add = False
+    list_display = ('title', 'product', 'sort_order', 'created_at')
+    list_filter = ('product__category', 'product__brand')
+    search_fields = ('title', 'product__title', 'product__slug')
+    autocomplete_fields = ('product',)
+    ordering = ('product__title', 'sort_order')
+    inlines = (ProductSpecItemInline,)
+    fields = ('product', 'sort_order', 'title')
+
+
 @admin.register(m.Product)
 class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     drawer_add = False
@@ -203,7 +239,7 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     autocomplete_fields = ('brand', 'category', 'condition', 'product_model')
     ordering = ('-created_at',)
     prepopulated_fields = {'slug': ('title',)}
-    inlines = (ProductImageInline, ProductVariantInline)
+    inlines = (ProductImageInline, ProductVariantInline, ProductSpecGroupInline)
 
     _BASE_FIELDSETS = (
         ('Основная информация', {

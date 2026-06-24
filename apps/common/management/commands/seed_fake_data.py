@@ -60,6 +60,8 @@ class Command(BaseCommand):
         products = self._seed_products(categories, brands, models, conditions)
         variants = self._seed_variants(products, memories, colors, sim_types)
         self._seed_product_images(products, variants)
+        from apps.store_core.seed_characteristics import seed_product_characteristics
+        seed_product_characteristics(products)
         self._seed_orders(variants)
         self._seed_blog()
         self._seed_repair()
