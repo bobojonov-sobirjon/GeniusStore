@@ -22,6 +22,9 @@ def _add_group(product: Product, sort_order: int, title: str, rows: list) -> Non
             group=group,
             label=label,
             defaults={
+                'product': product,
+                'group_title': title,
+                'group_sort_order': sort_order,
                 'sort_order': item_sort,
                 'values': values if isinstance(values, list) else [values],
                 'variant_source': source or '',

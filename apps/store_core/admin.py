@@ -195,14 +195,35 @@ class ProductVariantInline(admin.StackedInline):
 
 
 class ProductSpecItemInline(admin.TabularInline):
+    """Rows when editing a group directly (legacy path)."""
     model = m.ProductSpecItem
     form = ProductSpecItemForm
+    fk_name = 'group'
     extra = 1
     classes = ('whale-card',)
     fields = ('sort_order', 'label', 'variant_source', 'values_text')
     ordering = ('sort_order', 'label')
     verbose_name = 'Строка'
     verbose_name_plural = 'Строки характеристик'
+
+
+class ProductSpecRowInline(admin.TabularInline):
+    """All characteristic rows on the product page — group + label + values in one table."""
+    model = m.ProductSpecItem
+    form = ProductSpecItemForm
+    fk_name = 'product'
+    extra = 3
+    classes = ('whale-card',)
+    fields = (
+        'group_sort_order', 'group_title', 'sort_order',
+        'label', 'variant_source', 'values_text',
+    )
+    ordering = ('group_sort_order', 'group_title', 'sort_order', 'label')
+    verbose_name = 'Характеристика'
+    verbose_name_plural = (
+        'Характеристики — всё в одной таблице: группа, название, значения. '
+        'Память / Цвет / SIM: «Источник из варианта», поле «Значения» оставьте пустым.'
+    )
 
 
 class ProductSpecGroupInline(admin.StackedInline):
@@ -239,7 +260,7 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     autocomplete_fields = ('brand', 'category', 'condition', 'product_model')
     ordering = ('-created_at',)
     prepopulated_fields = {'slug': ('title',)}
-    inlines = (ProductImageInline, ProductVariantInline, ProductSpecGroupInline)
+    inlines = (ProductImageInline, ProductVariantInline, ProductSpecRowInline)
 
     _BASE_FIELDSETS = (
         ('Основная информация', {

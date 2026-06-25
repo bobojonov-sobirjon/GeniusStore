@@ -403,13 +403,31 @@ class ProductSpecItem(models.Model):
         SYSTEM = 'system', 'Операционная система'
 
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(
+        Product,
+        verbose_name='Товар',
+        db_column='productId',
+        on_delete=models.CASCADE,
+        related_name='spec_items',
+        null=True,
+        blank=True,
+    )
     group = models.ForeignKey(
         ProductSpecGroup,
         verbose_name='Группа',
         db_column='groupId',
         on_delete=models.CASCADE,
         related_name='items',
+        null=True,
+        blank=True,
     )
+    group_title = models.TextField(
+        'Группа (название)',
+        blank=True,
+        default='',
+        help_text='Например: Основные характеристики, Корпус, Камера',
+    )
+    group_sort_order = models.PositiveIntegerField('Порядок группы', default=0)
     label = models.TextField('Название')
     values = models.JSONField(
         'Значения',
@@ -436,6 +454,24 @@ class ProductSpecItem(models.Model):
 
     def __str__(self) -> str:
         return self.label
+
+    def save(self, *args, **kwargs):
+        if self.group_id and not self.product_id:
+            self.product_id = self.group.product_id
+        if self.group_id and not self.group_title:
+            self.group_title = self.group.title
+            self.group_sort_order = self.group.sort_order
+        title = (self.group_title or '').strip()
+        if self.product_id and title:
+            group, _ = ProductSpecGroup.objects.update_or_create(
+                product_id=self.product_id,
+                title=title,
+                defaults={'sort_order': self.group_sort_order or 0},
+            )
+            self.group = group
+            self.group_title = group.title
+            self.group_sort_order = group.sort_order
+        super().save(*args, **kwargs)
 
 
 class ProductVariant(PrismaModel):
