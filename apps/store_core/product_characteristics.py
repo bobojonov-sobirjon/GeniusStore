@@ -1,40 +1,36 @@
 """Build grouped product characteristics for API (Whale Store style)."""
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
 from django.db.models import Prefetch
 
-from apps.store_core.models import Product, ProductSpecGroup, ProductSpecItem, ProductVariant
+from apps.store_core.models import Product, ProductCharacteristic, ProductVariant
+from apps.store_core.spec_types import SPEC_TYPE_ORDER, spec_type_label
 
 
-def spec_groups_prefetch() -> Prefetch:
+def characteristics_prefetch() -> Prefetch:
     return Prefetch(
-        'spec_groups',
-        queryset=ProductSpecGroup.objects.prefetch_related(
-            Prefetch(
-                'items',
-                queryset=ProductSpecItem.objects.order_by('sort_order', 'label'),
-            ),
-        ).order_by('sort_order', 'title'),
+        'characteristics',
+        queryset=ProductCharacteristic.objects.order_by('spec_type', 'sort_order', 'title'),
     )
 
 
-def _spec_groups_for_product(product: Product) -> list[ProductSpecGroup]:
+# Backward-compatible alias for serialization imports.
+spec_groups_prefetch = characteristics_prefetch
+
+
+def _characteristics_for_product(product: Product) -> list[ProductCharacteristic]:
     if (
         hasattr(product, '_prefetched_objects_cache')
-        and 'spec_groups' in getattr(product, '_prefetched_objects_cache', {})
+        and 'characteristics' in getattr(product, '_prefetched_objects_cache', {})
     ):
-        return list(product.spec_groups.all())
+        return list(product.characteristics.all())
     return list(
-        ProductSpecGroup.objects.filter(product_id=product.pk)
-        .prefetch_related(
-            Prefetch(
-                'items',
-                queryset=ProductSpecItem.objects.order_by('sort_order', 'label'),
-            ),
+        ProductCharacteristic.objects.filter(product_id=product.pk).order_by(
+            'spec_type', 'sort_order', 'title',
         )
-        .order_by('sort_order', 'title')
     )
 
 
@@ -49,37 +45,40 @@ def _resolve_sim_name(variant: ProductVariant | None, sim_type_id: str | None) -
     return st.name if st else None
 
 
+def _manual_values(text: str) -> list[str]:
+    return [line.strip() for line in (text or '').splitlines() if line.strip()]
+
+
 def _resolve_item_values(
-    item: ProductSpecItem,
+    item: ProductCharacteristic,
     product: Product,
     variant: ProductVariant | None,
     *,
     sim_type_id: str | None = None,
 ) -> list[str]:
     source = item.variant_source or ''
-    if source == ProductSpecItem.VariantSource.MEMORY:
+    if source == ProductCharacteristic.VariantSource.MEMORY:
         memory = getattr(variant, 'memory', None) if variant else None
         return [memory.name] if memory and memory.name else []
-    if source == ProductSpecItem.VariantSource.COLOR:
+    if source == ProductCharacteristic.VariantSource.COLOR:
         color = getattr(variant, 'color', None) if variant else None
         return [color.name] if color and color.name else []
-    if source == ProductSpecItem.VariantSource.SIM:
+    if source == ProductCharacteristic.VariantSource.SIM:
         name = _resolve_sim_name(variant, sim_type_id)
         return [name] if name else []
-    if source == ProductSpecItem.VariantSource.SERIES:
+    if source == ProductCharacteristic.VariantSource.SERIES:
         val = product.series or product.line or product.title
         return [val] if val else []
-    if source == ProductSpecItem.VariantSource.MODEL:
+    if source == ProductCharacteristic.VariantSource.MODEL:
         pm = getattr(product, 'product_model', None)
         return [pm.name] if pm and pm.name else []
-    if source == ProductSpecItem.VariantSource.CONDITION:
+    if source == ProductCharacteristic.VariantSource.CONDITION:
         cond = getattr(product, 'condition', None)
         return [cond.name] if cond and cond.name else []
-    if source == ProductSpecItem.VariantSource.SYSTEM:
+    if source == ProductCharacteristic.VariantSource.SYSTEM:
         return [product.system] if product.system else []
 
-    raw = item.values if isinstance(item.values, list) else []
-    return [str(v).strip() for v in raw if v is not None and str(v).strip()]
+    return _manual_values(item.value)
 
 
 def build_characteristic_groups(
@@ -88,11 +87,15 @@ def build_characteristic_groups(
     *,
     sim_type_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    groups = _spec_groups_for_product(product)
+    grouped: dict[str, list[ProductCharacteristic]] = defaultdict(list)
+    for row in _characteristics_for_product(product):
+        grouped[row.spec_type].append(row)
+
     out: list[dict[str, Any]] = []
-    for group in groups:
+    for spec_type in sorted(grouped.keys(), key=lambda t: SPEC_TYPE_ORDER.get(t, 999)):
+        rows = grouped[spec_type]
         items_out: list[dict[str, Any]] = []
-        for item in group.items.all():
+        for item in rows:
             values = _resolve_item_values(
                 item, product, variant, sim_type_id=sim_type_id,
             )
@@ -100,16 +103,16 @@ def build_characteristic_groups(
                 continue
             items_out.append({
                 'id': str(item.id),
-                'label': item.label,
+                'label': item.title,
                 'values': values,
                 'source': item.variant_source or 'manual',
                 'isVariant': bool(item.variant_source),
             })
         if items_out:
             out.append({
-                'id': str(group.id),
-                'title': group.title,
-                'sortOrder': group.sort_order,
+                'id': str(rows[0].id),
+                'title': spec_type_label(spec_type),
+                'sortOrder': SPEC_TYPE_ORDER.get(spec_type, 999),
                 'items': items_out,
             })
     return out

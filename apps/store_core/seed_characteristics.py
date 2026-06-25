@@ -1,32 +1,29 @@
-"""Demo characteristic groups for seed command."""
+"""Demo characteristic rows for seed command."""
 from __future__ import annotations
 
-from apps.store_core.models import Product, ProductSpecGroup, ProductSpecItem
+from apps.store_core.models import Product, ProductCharacteristic
 
 
-def _add_group(product: Product, sort_order: int, title: str, rows: list) -> None:
-    group, _ = ProductSpecGroup.objects.update_or_create(
-        product=product,
-        title=title,
-        defaults={'sort_order': sort_order},
-    )
+def _add_rows(product: Product, spec_type: str, rows: list) -> None:
     for item_sort, row in enumerate(rows):
         if len(row) == 3:
-            label, values, source = row
+            title, value, source = row
         elif len(row) == 2:
-            label, values = row
+            title, value = row
             source = ''
         else:
             continue
-        ProductSpecItem.objects.update_or_create(
-            group=group,
-            label=label,
+        if isinstance(value, list):
+            value_text = '\n'.join(str(v) for v in value)
+        else:
+            value_text = str(value) if value else ''
+        ProductCharacteristic.objects.update_or_create(
+            product=product,
+            spec_type=spec_type,
+            title=title,
             defaults={
-                'product': product,
-                'group_title': title,
-                'group_sort_order': sort_order,
                 'sort_order': item_sort,
-                'values': values if isinstance(values, list) else [values],
+                'value': value_text,
                 'variant_source': source or '',
             },
         )
@@ -34,38 +31,39 @@ def _add_group(product: Product, sort_order: int, title: str, rows: list) -> Non
 
 def seed_iphone_13_characteristics(product: Product) -> None:
     """Whale Store style grouped specs for demo product apple-iphone-13."""
-    _add_group(product, 0, 'Основные характеристики', [
-        ('Серия', [], ProductSpecItem.VariantSource.SERIES),
-        ('Память', [], ProductSpecItem.VariantSource.MEMORY),
-        ('Цвет', [], ProductSpecItem.VariantSource.COLOR),
-        ('SIM-карта', [], ProductSpecItem.VariantSource.SIM),
-        ('Операционная система', [], ProductSpecItem.VariantSource.SYSTEM),
+    VS = ProductCharacteristic.VariantSource
+    _add_rows(product, 'main', [
+        ('Серия', '', VS.SERIES),
+        ('Память', '', VS.MEMORY),
+        ('Цвет', '', VS.COLOR),
+        ('SIM-карта', '', VS.SIM),
+        ('Операционная система', '', VS.SYSTEM),
     ])
-    _add_group(product, 1, 'Процессор', [
-        ('Процессор', ['Apple A15 Bionic']),
+    _add_rows(product, 'processor', [
+        ('Процессор', 'Apple A15 Bionic'),
     ])
-    _add_group(product, 2, 'Корпус', [
-        ('Материал', ['алюминий']),
-        ('Высота, мм', ['146.7']),
-        ('Ширина, мм', ['71.5']),
-        ('Толщина, мм', ['7.65']),
-        ('Вес, г', ['173']),
+    _add_rows(product, 'body', [
+        ('Материал', 'алюминий'),
+        ('Высота, мм', '146.7'),
+        ('Ширина, мм', '71.5'),
+        ('Толщина, мм', '7.65'),
+        ('Вес, г', '173'),
     ])
-    _add_group(product, 3, 'Дисплей', [
-        ('Диагональ', ['6.1"']),
-        ('Разрешение', ['2532×1170']),
-        ('Тип дисплея', ['Super Retina XDR OLED']),
-        ('Плотность пикселей на дюйм', ['460 пикс/дюйм']),
-        ('Яркость', ['1200 нит']),
-        ('Частота обновления экрана', ['60 Гц']),
-        ('Стекло', ['Ceramic Shield']),
-        ('Always On Display', ['Нет']),
+    _add_rows(product, 'display', [
+        ('Диагональ', '6.1"'),
+        ('Разрешение', '2532×1170'),
+        ('Тип дисплея', 'Super Retina XDR OLED'),
+        ('Плотность пикселей на дюйм', '460 пикс/дюйм'),
+        ('Яркость', '1200 нит'),
+        ('Частота обновления экрана', '60 Гц'),
+        ('Стекло', 'Ceramic Shield'),
+        ('Always On Display', 'Нет'),
     ])
-    _add_group(product, 4, 'Камера', [
-        ('Разрешение камеры', ['12 Мп + 12 Мп']),
-        ('Диафрагма', ['основная: f/1.6, сверхширокоугольная: f/2.4']),
+    _add_rows(product, 'camera', [
+        ('Разрешение камеры', '12 Мп + 12 Мп'),
+        ('Диафрагма', 'основная: f/1.6, сверхширокоугольная: f/2.4'),
         ('Зум (фото)', ['цифровой 5x', 'оптический 2x']),
-        ('Защита объектива', ['сапфировое стекло']),
+        ('Защита объектива', 'сапфировое стекло'),
         ('Функции камеры', [
             'ночной режим',
             'Smart HDR 4',
@@ -74,9 +72,9 @@ def seed_iphone_13_characteristics(product: Product) -> None:
             'портретный режим',
         ]),
     ])
-    _add_group(product, 5, 'Фронтальная камера', [
-        ('Разрешение фронтальной камеры', ['12 Мп']),
-        ('Диафрагма фронтальной камеры', ['f/2.2']),
+    _add_rows(product, 'front_camera', [
+        ('Разрешение фронтальной камеры', '12 Мп'),
+        ('Диафрагма фронтальной камеры', 'f/2.2'),
         ('Разрешение видео фронтальной камеры', [
             'HD-видео 1080p с частотой 25, 30 или 60 кадров/с',
         ]),
@@ -87,7 +85,7 @@ def seed_iphone_13_characteristics(product: Product) -> None:
             'серийная съёмка',
         ]),
     ])
-    _add_group(product, 6, 'Запись видео', [
+    _add_rows(product, 'video', [
         ('Разрешение видео', [
             'HD-видео 1080p с частотой 25, 30 или 60 кадров/с',
             '4K с частотой 24, 25, 30 или 60 кадров/с',
@@ -102,11 +100,11 @@ def seed_iphone_13_characteristics(product: Product) -> None:
             'форматы записанного видео: HEVC и H.264',
         ]),
     ])
-    _add_group(product, 7, 'Питание', [
-        ('Тип аккумулятора', ['Li-Ion']),
-        ('Воспроизведение видео', ['до 19 часов']),
+    _add_rows(product, 'power', [
+        ('Тип аккумулятора', 'Li-Ion'),
+        ('Воспроизведение видео', 'до 19 часов'),
     ])
-    _add_group(product, 8, 'Связь и подключение', [
+    _add_rows(product, 'connectivity', [
         ('Сотовая и беспроводная связь', [
             '5G (sub-6 GHz)',
             'Gigabit Class LTE',
@@ -115,14 +113,14 @@ def seed_iphone_13_characteristics(product: Product) -> None:
             'NFC',
         ]),
         ('Навигация', ['GPS', 'ГЛОНАСС', 'Galileo', 'QZSS', 'BeiDou']),
-        ('Разъёмы', ['Lightning']),
+        ('Разъёмы', 'Lightning'),
     ])
-    _add_group(product, 9, 'Заводские данные', [
-        ('Страна производителя', ['Китай']),
-        ('Гарантия, мес', ['12']),
+    _add_rows(product, 'factory', [
+        ('Страна производителя', 'Китай'),
+        ('Гарантия, мес', '12'),
     ])
-    _add_group(product, 10, 'Дополнительно', [
-        ('Тип разблокировки', ['Face ID']),
+    _add_rows(product, 'extra', [
+        ('Тип разблокировки', 'Face ID'),
         ('Датчики', [
             'акселерометр',
             'гироскоп',

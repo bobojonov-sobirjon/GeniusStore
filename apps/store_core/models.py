@@ -8,8 +8,8 @@ import uuid
 
 from django.db import models
 
-
 from apps.common.file_storage import image_upload_to
+from apps.store_core import spec_types
 
 
 class PrismaModel(models.Model):
@@ -363,37 +363,8 @@ class ProductImage(models.Model):
         return super().delete(*args, **kwargs)
 
 
-class ProductSpecGroup(models.Model):
-    """Main characteristic section on product page (e.g. Корпус, Камера)."""
-
-    id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(
-        Product,
-        verbose_name='Товар',
-        db_column='productId',
-        on_delete=models.CASCADE,
-        related_name='spec_groups',
-    )
-    title = models.TextField(
-        'Название блока',
-        help_text='Например: Основные характеристики, Корпус, Камера',
-    )
-    sort_order = models.PositiveIntegerField('Порядок группы', default=0)
-    created_at = models.DateTimeField('Создано', auto_now_add=True)
-
-    class Meta:
-        db_table = 'ProductSpecGroup'
-        verbose_name = 'Характеристика'
-        verbose_name_plural = 'Характеристики'
-        ordering = ('sort_order', 'title')
-        managed = True
-
-    def __str__(self) -> str:
-        return self.title.strip() if self.title else 'Новая характеристика'
-
-
-class ProductSpecItem(models.Model):
-    """Sub-characteristic row inside a group (label + one or more values)."""
+class ProductCharacteristic(models.Model):
+    """One product spec row: block type + title + value(s)."""
 
     class VariantSource(models.TextChoices):
         MANUAL = '', 'Вручную'
@@ -411,32 +382,20 @@ class ProductSpecItem(models.Model):
         verbose_name='Товар',
         db_column='productId',
         on_delete=models.CASCADE,
-        related_name='spec_items',
-        null=True,
-        blank=True,
+        related_name='characteristics',
     )
-    group = models.ForeignKey(
-        ProductSpecGroup,
-        verbose_name='Группа',
-        db_column='groupId',
-        on_delete=models.CASCADE,
-        related_name='items',
-        null=True,
-        blank=True,
+    spec_type = models.CharField(
+        'Тип',
+        max_length=32,
+        db_column='type',
+        choices=spec_types.SPEC_TYPE_CHOICES,
     )
-    group_title = models.TextField(
-        'Группа (название)',
+    title = models.TextField('Название')
+    value = models.TextField(
+        'Значение',
         blank=True,
         default='',
-        help_text='Например: Основные характеристики, Корпус, Камера',
-    )
-    group_sort_order = models.PositiveIntegerField('Порядок группы', default=0)
-    label = models.TextField('Название')
-    values = models.JSONField(
-        'Значения',
-        default=list,
-        blank=True,
-        help_text='Список строк. Несколько значений — маркированный список на сайте.',
+        help_text='Одно значение или несколько строк (каждая строка — пункт списка на сайте).',
     )
     variant_source = models.CharField(
         'Источник из варианта',
@@ -444,37 +403,20 @@ class ProductSpecItem(models.Model):
         choices=VariantSource.choices,
         blank=True,
         default='',
-        help_text='Если выбрано — значения подставляются из товара/варианта автоматически.',
+        help_text='Для Память/Цвет/SIM оставьте «Значение» пустым — подставится автоматически.',
     )
     sort_order = models.PositiveIntegerField('Порядок', default=0)
+    created_at = models.DateTimeField('Создано', auto_now_add=True)
 
     class Meta:
-        db_table = 'ProductSpecItem'
-        verbose_name = 'Характеристика'
-        verbose_name_plural = 'Характеристики'
-        ordering = ('sort_order', 'label')
+        db_table = 'ProductCharacteristic'
+        verbose_name = 'Характеристика товара'
+        verbose_name_plural = 'Характеристики товара'
+        ordering = ('spec_type', 'sort_order', 'title')
         managed = True
 
     def __str__(self) -> str:
-        return self.label
-
-    def save(self, *args, **kwargs):
-        if self.group_id and not self.product_id:
-            self.product_id = self.group.product_id
-        if self.group_id and not self.group_title:
-            self.group_title = self.group.title
-            self.group_sort_order = self.group.sort_order
-        title = (self.group_title or '').strip()
-        if self.product_id and title:
-            group, _ = ProductSpecGroup.objects.update_or_create(
-                product_id=self.product_id,
-                title=title,
-                defaults={'sort_order': self.group_sort_order or 0},
-            )
-            self.group = group
-            self.group_title = group.title
-            self.group_sort_order = group.sort_order
-        super().save(*args, **kwargs)
+        return f'{spec_types.spec_type_label(self.spec_type)}: {self.title}'
 
 
 class ProductVariant(PrismaModel):

@@ -41,7 +41,6 @@ urlpatterns = [
         r'^admin/accounts/customuser(?:/(?P<rest>.*))?$',
         redirect_legacy_customuser_admin,
     ),
-    path('_nested_admin/', include('nested_admin.urls')),
     path('admin/', admin.site.urls),
     path('api/health', ApiHealthView.as_view()),
     path('api/', include('apps.accounts.urls')),
