@@ -34,6 +34,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    'nested_admin',
     'jazzmin',
     'django.contrib.sites',
     'django.contrib.admin',
@@ -70,6 +71,8 @@ JAZZMIN_SETTINGS = {
     "hide_apps": ["auth", "sites"],
     "hide_models": [
         "store_core.productvariantsimtype",
+        "store_core.productspecgroup",
+        "store_core.productspecitem",
         "store_core.blogsteps",
         "store_core.servicemodel",
         "store_core.service",

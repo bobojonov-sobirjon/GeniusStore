@@ -374,19 +374,22 @@ class ProductSpecGroup(models.Model):
         on_delete=models.CASCADE,
         related_name='spec_groups',
     )
-    title = models.TextField('Группа характеристик')
+    title = models.TextField(
+        'Название блока',
+        help_text='Например: Основные характеристики, Корпус, Камера',
+    )
     sort_order = models.PositiveIntegerField('Порядок группы', default=0)
     created_at = models.DateTimeField('Создано', auto_now_add=True)
 
     class Meta:
         db_table = 'ProductSpecGroup'
-        verbose_name = 'Группа характеристик'
-        verbose_name_plural = 'Группы характеристик'
+        verbose_name = 'Характеристика'
+        verbose_name_plural = 'Характеристики'
         ordering = ('sort_order', 'title')
         managed = True
 
     def __str__(self) -> str:
-        return f'{self.title} ({self.product_id})'
+        return self.title.strip() if self.title else 'Новая характеристика'
 
 
 class ProductSpecItem(models.Model):

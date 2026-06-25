@@ -1,13 +1,14 @@
 """Django admin for Prisma-backed store tables (unmanaged models)."""
 from __future__ import annotations
 
+import nested_admin
 from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
 from apps.common.media_urls import media_url
 from apps.store_core import models as m
-from apps.store_core.admin_forms import ProductImageForm, ProductSpecItemForm
+from apps.store_core.admin_forms import ProductImageForm, ProductSpecItemForm, ProductSpecItemNestedForm
 from apps.store_core.category_specs import spec_field_names_for_category
 
 
@@ -194,49 +195,45 @@ class ProductVariantInline(admin.StackedInline):
     autocomplete_fields = ('memory', 'color', 'sim_type')
 
 
-class ProductSpecItemInline(admin.TabularInline):
-    """Rows when editing a group directly (legacy path)."""
+class ProductSpecItemNestedInline(nested_admin.NestedTabularInline):
     model = m.ProductSpecItem
-    form = ProductSpecItemForm
+    form = ProductSpecItemNestedForm
+    extra = 1
+    min_num = 0
+    classes = ('whale-card', 'nested-spec-items')
+    fields = ('sort_order', 'label', 'variant_source', 'values_text')
+    ordering = ('sort_order', 'label')
+    verbose_name = 'Строка'
+    verbose_name_plural = 'Название и значения'
+
+
+class ProductSpecGroupNestedInline(nested_admin.NestedStackedInline):
+    model = m.ProductSpecGroup
+    inlines = (ProductSpecItemNestedInline,)
+    extra = 1
+    min_num = 0
+    sortable_field_name = 'sort_order'
+    classes = ('whale-card', 'nested-spec-group')
+    fields = ('sort_order', 'title')
+    ordering = ('sort_order', 'title')
+    verbose_name = 'Характеристика'
+    verbose_name_plural = (
+        'Характеристики — добавьте блок (Основные характеристики, Корпус…), '
+        'внутри укажите Название и Значения'
+    )
+
+
+class ProductSpecItemInline(admin.TabularInline):
+    """Строки при редактировании группы отдельно."""
+    model = m.ProductSpecItem
+    form = ProductSpecItemNestedForm
     fk_name = 'group'
     extra = 1
     classes = ('whale-card',)
     fields = ('sort_order', 'label', 'variant_source', 'values_text')
     ordering = ('sort_order', 'label')
     verbose_name = 'Строка'
-    verbose_name_plural = 'Строки характеристик'
-
-
-class ProductSpecRowInline(admin.TabularInline):
-    """All characteristic rows on the product page — group + label + values in one table."""
-    model = m.ProductSpecItem
-    form = ProductSpecItemForm
-    fk_name = 'product'
-    extra = 3
-    classes = ('whale-card',)
-    fields = (
-        'group_sort_order', 'group_title', 'sort_order',
-        'label', 'variant_source', 'values_text',
-    )
-    ordering = ('group_sort_order', 'group_title', 'sort_order', 'label')
-    verbose_name = 'Характеристика'
-    verbose_name_plural = (
-        'Характеристики — всё в одной таблице: группа, название, значения. '
-        'Память / Цвет / SIM: «Источник из варианта», поле «Значения» оставьте пустым.'
-    )
-
-
-class ProductSpecGroupInline(admin.StackedInline):
-    model = m.ProductSpecGroup
-    extra = 0
-    show_change_link = True
-    classes = ('whale-card',)
-    fields = ('sort_order', 'title')
-    ordering = ('sort_order', 'title')
-    verbose_name = 'Группа'
-    verbose_name_plural = (
-        'Характеристики (группы) — нажмите на группу, чтобы добавить строки с значениями'
-    )
+    verbose_name_plural = 'Название и значения'
 
 
 @admin.register(m.ProductSpecGroup)
@@ -252,7 +249,10 @@ class ProductSpecGroupAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(m.Product)
-class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
+class ProductAdmin(WhaleStoreAdminMixin, nested_admin.NestedModelAdmin):
+    class Media(WhaleStoreAdminMixin.Media, nested_admin.NestedModelAdmin.Media):
+        pass
+
     drawer_add = False
     list_display = ('title', 'brand', 'category', 'is_available', 'slug', 'created_at')
     list_filter = ('category', 'is_available', 'is_new', 'is_hit', 'brand')
@@ -260,7 +260,7 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     autocomplete_fields = ('brand', 'category', 'condition', 'product_model')
     ordering = ('-created_at',)
     prepopulated_fields = {'slug': ('title',)}
-    inlines = (ProductImageInline, ProductVariantInline, ProductSpecRowInline)
+    inlines = (ProductImageInline, ProductVariantInline, ProductSpecGroupNestedInline)
 
     _BASE_FIELDSETS = (
         ('Основная информация', {

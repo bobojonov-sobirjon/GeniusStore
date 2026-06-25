@@ -19,33 +19,66 @@ class ProductImageForm(forms.ModelForm):
         return cleaned
 
 
-class ProductSpecItemForm(forms.ModelForm):
+def _values_from_text(text: str) -> list[str]:
+    return [line.strip() for line in (text or '').splitlines() if line.strip()]
+
+
+class ProductSpecItemNestedForm(forms.ModelForm):
+    """Строка внутри блока характеристик: только название и значения."""
+
+    values_text = forms.CharField(
+        label='Значения',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 2,
+            'placeholder': 'Одно значение или несколько строк для списка',
+        }),
+        help_text='Пусто, если выбран «Источник из варианта». Несколько значений — с новой строки.',
+    )
+
+    class Meta:
+        model = ProductSpecItem
+        fields = ('label', 'variant_source', 'sort_order')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['label'].widget.attrs.setdefault(
+            'placeholder', 'Серия, Память, Материал…',
+        )
+        if self.instance.pk and isinstance(self.instance.values, list):
+            self.fields['values_text'].initial = '\n'.join(str(v) for v in self.instance.values)
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('variant_source'):
+            cleaned['values'] = []
+        else:
+            text = cleaned.pop('values_text', '') or ''
+            cleaned['values'] = _values_from_text(text)
+        return cleaned
+
+    def save(self, commit=True):
+        self.instance.values = self.cleaned_data.get('values', [])
+        return super().save(commit=commit)
+
+
+class ProductSpecItemForm(ProductSpecItemNestedForm):
+    """Плоская таблица (резерв) — с полями группы."""
+
     group_title = forms.CharField(
         label='Группа',
         required=False,
         widget=forms.TextInput(attrs={'placeholder': 'Основные характеристики'}),
-        help_text='Блок на сайте: «Корпус», «Камера» и т.д.',
     )
     group_sort_order = forms.IntegerField(
         label='№ группы',
         required=False,
         min_value=0,
         initial=0,
-        help_text='0 — первая группа, 1 — вторая…',
-    )
-    values_text = forms.CharField(
-        label='Значения',
-        required=False,
-        widget=forms.Textarea(attrs={
-            'rows': 2,
-            'placeholder': 'Одно значение\nили несколько строк для списка',
-        }),
-        help_text='Пусто, если выбран источник из варианта. Несколько значений — с новой строки.',
     )
 
-    class Meta:
-        model = ProductSpecItem
-        fields = ('label', 'variant_source', 'sort_order')
+    class Meta(ProductSpecItemNestedForm.Meta):
+        pass
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -59,11 +92,9 @@ class ProductSpecItemForm(forms.ModelForm):
                 if self.instance.group_sort_order is not None
                 else (self.instance.group.sort_order if self.instance.group_id else 0)
             )
-        if self.instance.pk and isinstance(self.instance.values, list):
-            self.fields['values_text'].initial = '\n'.join(str(v) for v in self.instance.values)
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = forms.ModelForm.clean(self)
         group_title = (cleaned.get('group_title') or '').strip()
         if not group_title and self.instance.group_id:
             group_title = self.instance.group.title
@@ -77,12 +108,11 @@ class ProductSpecItemForm(forms.ModelForm):
             cleaned['values'] = []
         else:
             text = cleaned.pop('values_text', '') or ''
-            lines = [line.strip() for line in text.splitlines() if line.strip()]
-            cleaned['values'] = lines
+            cleaned['values'] = _values_from_text(text)
         return cleaned
 
     def save(self, commit=True):
         self.instance.group_title = self.cleaned_data['group_title']
         self.instance.group_sort_order = self.cleaned_data['group_sort_order']
         self.instance.values = self.cleaned_data.get('values', [])
-        return super().save(commit=commit)
+        return forms.ModelForm.save(self, commit=commit)
