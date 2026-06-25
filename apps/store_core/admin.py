@@ -250,9 +250,6 @@ class ProductSpecGroupAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
 
 @admin.register(m.Product)
 class ProductAdmin(WhaleStoreAdminMixin, nested_admin.NestedModelAdmin):
-    class Media(WhaleStoreAdminMixin.Media, nested_admin.NestedModelAdmin.Media):
-        pass
-
     drawer_add = False
     list_display = ('title', 'brand', 'category', 'is_available', 'slug', 'created_at')
     list_filter = ('category', 'is_available', 'is_new', 'is_hit', 'brand')
