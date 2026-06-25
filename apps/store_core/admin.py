@@ -160,10 +160,11 @@ class ProductVariantSimTypeInline(admin.TabularInline):
     autocomplete_fields = ('sim_type',)
 
 
-class ProductImageInline(admin.TabularInline):
+class ProductImageInline(nested_admin.NestedTabularInline):
     model = m.ProductImage
     form = ProductImageForm
     extra = 1
+    is_sortable = False
     classes = ('whale-card',)
     fields = ('preview', 'color', 'image', 'alt', 'sort_order', 'is_primary')
     readonly_fields = ('preview',)
@@ -183,9 +184,10 @@ class ProductImageInline(admin.TabularInline):
         return '—'
 
 
-class ProductVariantInline(admin.StackedInline):
+class ProductVariantInline(nested_admin.NestedStackedInline):
     model = m.ProductVariant
     extra = 0
+    is_sortable = False
     show_change_link = False
     classes = ('whale-card',)
     fields = (
