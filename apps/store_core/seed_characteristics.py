@@ -6,13 +6,9 @@ from apps.store_core.models import Product, ProductCharacteristic
 
 def _add_rows(product: Product, spec_type: str, rows: list) -> None:
     for item_sort, row in enumerate(rows):
-        if len(row) == 3:
-            title, value, source = row
-        elif len(row) == 2:
-            title, value = row
-            source = ''
-        else:
+        if len(row) != 2:
             continue
+        title, value = row
         if isinstance(value, list):
             value_text = '\n'.join(str(v) for v in value)
         else:
@@ -24,20 +20,18 @@ def _add_rows(product: Product, spec_type: str, rows: list) -> None:
             defaults={
                 'sort_order': item_sort,
                 'value': value_text,
-                'variant_source': source or '',
             },
         )
 
 
 def seed_iphone_13_characteristics(product: Product) -> None:
     """Whale Store style grouped specs for demo product apple-iphone-13."""
-    VS = ProductCharacteristic.VariantSource
     _add_rows(product, 'main', [
-        ('Серия', '', VS.SERIES),
-        ('Память', '', VS.MEMORY),
-        ('Цвет', '', VS.COLOR),
-        ('SIM-карта', '', VS.SIM),
-        ('Операционная система', '', VS.SYSTEM),
+        ('Серия', 'iPhone 13'),
+        ('Память', '128 GB'),
+        ('Цвет', 'Green'),
+        ('SIM-карта', 'nano-SIM + eSIM'),
+        ('Операционная система', 'iOS'),
     ])
     _add_rows(product, 'processor', [
         ('Процессор', 'Apple A15 Bionic'),

@@ -366,16 +366,6 @@ class ProductImage(models.Model):
 class ProductCharacteristic(models.Model):
     """One product spec row: block type + title + value(s)."""
 
-    class VariantSource(models.TextChoices):
-        MANUAL = '', 'Вручную'
-        MEMORY = 'memory', 'Память (вариант)'
-        COLOR = 'color', 'Цвет (вариант)'
-        SIM = 'sim', 'SIM (вариант)'
-        SERIES = 'series', 'Серия'
-        MODEL = 'model', 'Модель'
-        CONDITION = 'condition', 'Состояние'
-        SYSTEM = 'system', 'Операционная система'
-
     id = models.UUIDField('Идентификатор', primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(
         Product,
@@ -396,14 +386,6 @@ class ProductCharacteristic(models.Model):
         blank=True,
         default='',
         help_text='Одно значение или несколько строк (каждая строка — пункт списка на сайте).',
-    )
-    variant_source = models.CharField(
-        'Источник из варианта',
-        max_length=32,
-        choices=VariantSource.choices,
-        blank=True,
-        default='',
-        help_text='Для Память/Цвет/SIM оставьте «Значение» пустым — подставится автоматически.',
     )
     sort_order = models.PositiveIntegerField('Порядок', default=0)
     created_at = models.DateTimeField('Создано', auto_now_add=True)

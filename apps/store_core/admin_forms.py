@@ -29,12 +29,12 @@ class ProductCharacteristicForm(forms.ModelForm):
             'rows': 2,
             'placeholder': 'Одно значение или несколько строк для списка',
         }),
-        help_text='Пусто, если выбран «Источник из варианта». Несколько значений — с новой строки.',
+        help_text='Несколько значений — с новой строки.',
     )
 
     class Meta:
         model = ProductCharacteristic
-        fields = ('spec_type', 'title', 'variant_source', 'sort_order')
+        fields = ('spec_type', 'title', 'sort_order')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,11 +46,8 @@ class ProductCharacteristicForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get('variant_source'):
-            cleaned['value'] = ''
-        else:
-            text = cleaned.pop('value_text', '') or ''
-            cleaned['value'] = text
+        text = cleaned.pop('value_text', '') or ''
+        cleaned['value'] = text
         return cleaned
 
     def save(self, commit=True):

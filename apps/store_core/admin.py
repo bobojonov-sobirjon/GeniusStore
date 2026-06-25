@@ -199,7 +199,7 @@ class ProductCharacteristicInline(admin.TabularInline):
     form = ProductCharacteristicForm
     extra = 3
     classes = ('whale-card',)
-    fields = ('spec_type', 'sort_order', 'title', 'variant_source', 'value_text')
+    fields = ('spec_type', 'sort_order', 'title', 'value_text')
     ordering = ('spec_type', 'sort_order', 'title')
     verbose_name = 'Строка'
     verbose_name_plural = (
