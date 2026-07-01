@@ -70,7 +70,7 @@ def sync_all_variant_sim_types(*, dry_run: bool = False) -> dict[str, int]:
         )
         .order_by('product_id', 'id')
     )
-    for variant in qs.iterator():
+    for variant in qs.iterator(chunk_size=200):
         stats['total'] += 1
         if is_intentional_multi_sim(variant):
             stats['skipped_multi'] += 1
