@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django import forms
 
-from apps.store_core.models import ProductCharacteristic, ProductImage
+from apps.store_core.models import Product, ProductCharacteristic, ProductImage, ProductVariant
 
 
 class ProductImageForm(forms.ModelForm):
@@ -53,3 +53,33 @@ class ProductCharacteristicForm(forms.ModelForm):
     def save(self, commit=True):
         self.instance.value = self.cleaned_data.get('value', '')
         return super().save(commit=commit)
+
+
+class ProductAdminForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = '__all__'
+        labels = {
+            'description': 'Описание товара',
+        }
+        help_texts = {
+            'description': 'Общий текст на странице товара (для всех вариантов).',
+        }
+
+
+class ProductVariantInlineForm(forms.ModelForm):
+    class Meta:
+        model = ProductVariant
+        fields = (
+            'memory', 'color', 'sim_type', 'price', 'old_price',
+            'discount', 'is_available', 'description', 'images',
+        )
+        labels = {
+            'description': 'Описание варианта',
+        }
+        help_texts = {
+            'description': (
+                'Текст только для этого цвета/памяти. '
+                'На сайте меняется при выборе варианта.'
+            ),
+        }

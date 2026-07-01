@@ -7,7 +7,12 @@ from django.utils.html import format_html
 
 from apps.common.media_urls import media_url
 from apps.store_core import models as m
-from apps.store_core.admin_forms import ProductCharacteristicForm, ProductImageForm
+from apps.store_core.admin_forms import (
+    ProductAdminForm,
+    ProductCharacteristicForm,
+    ProductImageForm,
+    ProductVariantInlineForm,
+)
 from apps.store_core.category_specs import spec_field_names_for_category
 
 
@@ -184,6 +189,7 @@ class ProductImageInline(admin.TabularInline):
 
 class ProductVariantInline(admin.StackedInline):
     model = m.ProductVariant
+    form = ProductVariantInlineForm
     extra = 0
     show_change_link = False
     classes = ('whale-card',)
@@ -210,6 +216,7 @@ class ProductCharacteristicInline(admin.TabularInline):
 
 @admin.register(m.Product)
 class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
+    form = ProductAdminForm
     drawer_add = False
     list_display = ('title', 'brand', 'category', 'is_available', 'slug', 'created_at')
     list_filter = ('category', 'is_available', 'is_new', 'is_hit', 'brand')

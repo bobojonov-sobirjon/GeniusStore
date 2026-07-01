@@ -204,6 +204,7 @@ def _build_color_options(
             'oldPrice': _json_safe(v.old_price),
             'discount': v.discount,
             'isAvailable': v.is_available,
+            'description': v.description,
         })
     return list(by_color.values())
 
@@ -297,6 +298,7 @@ def apply_product_selection(
 
     if not selected:
         out['selectedVariant'] = None
+        out['variantDescription'] = None
         return out
 
     variant_data = variant_to_dict(selected, product=product, request=request)
@@ -304,6 +306,7 @@ def apply_product_selection(
         variant_data = _apply_sim_type_price(variant_data, selection.sim_type_id)
 
     out['selectedVariant'] = variant_data
+    out['variantDescription'] = variant_data.get('description')
     out['images'] = variant_data['images']
     out['specifications'] = variant_data['specifications']
     out['characteristicGroups'] = build_characteristic_groups(
@@ -385,6 +388,7 @@ def product_to_dict(
         'variants': [
             variant_to_dict(v, product=p, request=request) for v in variants
         ],
+        'variantDescription': default_variant.description if default_variant else None,
     }
     if selection is not None:
         return apply_product_selection(base, p, variants, selection, request=request)
