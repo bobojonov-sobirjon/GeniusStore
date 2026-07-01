@@ -67,6 +67,12 @@ class Command(BaseCommand):
         self._seed_repair()
         self._seed_banners_and_info()
         self._seed_storefront(variants)
+        from apps.store_core.variant_sim_types import sync_all_variant_sim_types
+        sim_stats = sync_all_variant_sim_types()
+        self.stdout.write(
+            f'SIM types aligned: {sim_stats["synced"]} variants '
+            f'(multi-SIM kept: {sim_stats["skipped_multi"]})',
+        )
         self.stdout.write(self.style.SUCCESS('Fake data seeded successfully.'))
         self.stdout.write('Demo product with color galleries: GET /api/product/slug/apple-iphone-13')
         self.stdout.write('Django admin: admin / admin123  (--with-superuser)')
@@ -469,12 +475,11 @@ class Command(BaseCommand):
                         obj.is_available = True
                         obj.save()
                     out.append(obj)
-                    for st in sim_types:
-                        ProductVariantSimType.objects.get_or_create(
-                            product_variant=obj,
-                            sim_type=st,
-                            defaults={'price': round(obj.price + uniform(0, 200), 2)},
-                        )
+                    self._attach_variant_sim_links(
+                        obj,
+                        sim_types,
+                        multi_sim=(p.slug == 'apple-iphone-13'),
+                    )
                 continue
 
             variant_count = 2
@@ -508,13 +513,37 @@ class Command(BaseCommand):
                         setattr(obj, key, val)
                     obj.save()
                 out.append(obj)
-                for st in sim_types:
-                    ProductVariantSimType.objects.get_or_create(
-                        product_variant=obj,
-                        sim_type=st,
-                        defaults={'price': round(obj.price + uniform(0, 200), 2)},
-                    )
+                self._attach_variant_sim_links(obj, sim_types)
         return out
+
+    def _attach_variant_sim_links(
+        self,
+        variant: ProductVariant,
+        sim_types: list[SimType],
+        *,
+        multi_sim: bool = False,
+    ) -> None:
+        """One SIM link by default; demo apple-iphone-13 may keep multi-SIM picker."""
+        if multi_sim:
+            for st in sim_types:
+                ProductVariantSimType.objects.update_or_create(
+                    product_variant=variant,
+                    sim_type=st,
+                    defaults={'price': round(variant.price + uniform(0, 200), 2)},
+                )
+            return
+
+        sim = variant.sim_type or (sim_types[0] if sim_types else None)
+        if not sim:
+            variant.sim_type_links.all().delete()
+            return
+
+        variant.sim_type_links.exclude(sim_type_id=sim.id).delete()
+        ProductVariantSimType.objects.update_or_create(
+            product_variant=variant,
+            sim_type=sim,
+            defaults={'price': variant.price},
+        )
 
     def _seed_product_images(self, products: list[Product], variants: list[ProductVariant]) -> None:
         """Gallery images linked to color (Whale Store: photos change when color is selected)."""

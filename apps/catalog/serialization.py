@@ -9,6 +9,7 @@ from django.db.models import Prefetch
 from apps.common.media_urls import media_url, media_url_images
 from apps.store_core.category_specs import build_specifications, spec_field_names_for_category
 from apps.store_core.product_characteristics import build_characteristic_groups, spec_groups_prefetch
+from apps.store_core.variant_sim_types import build_variant_sim_types
 from apps.store_core.models import Product, ProductImage, ProductVariant, ProductVariantSimType
 
 
@@ -115,7 +116,9 @@ def variant_to_dict(
     product: Product | None = None,
     request=None,
 ) -> dict[str, Any]:
-    sims = [_sim_link_to_dict(link) for link in v.sim_type_links.all()]
+    sims = build_variant_sim_types(v)
+    for item in sims:
+        item['price'] = _json_safe(item.get('price'))
     st = v.sim_type
     memory = getattr(v, 'memory', None)
     color = getattr(v, 'color', None)

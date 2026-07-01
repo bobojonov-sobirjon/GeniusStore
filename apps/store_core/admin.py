@@ -219,6 +219,18 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('title',)}
     inlines = (ProductImageInline, ProductVariantInline, ProductCharacteristicInline)
 
+    def save_formset(self, request, form, formset, change):
+        super().save_formset(request, form, formset, change)
+        if formset.model is not m.ProductVariant:
+            return
+        from apps.store_core.variant_sim_types import sync_primary_sim_type_link
+        for inline_form in formset.forms:
+            if not inline_form.cleaned_data or inline_form.cleaned_data.get('DELETE'):
+                continue
+            instance = inline_form.instance
+            if instance.pk:
+                sync_primary_sim_type_link(instance)
+
     _BASE_FIELDSETS = (
         ('Основная информация', {
             'fields': ('title', 'article', 'description'),
