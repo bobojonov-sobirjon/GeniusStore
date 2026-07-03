@@ -292,6 +292,76 @@ textarea:focus {
     margin-top: 0.75rem;
 }
 
+/* Product image inline: color autocomplete must not collapse vertically */
+.model-product.change-form #productimage_set-group .tabular {
+    table-layout: auto;
+    width: 100%;
+}
+
+.model-product.change-form #productimage_set-group td.field-color {
+    min-width: 200px;
+    width: 200px;
+    vertical-align: middle !important;
+}
+
+.model-product.change-form #productimage_set-group td.field-color .related-widget-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 180px;
+}
+
+.model-product.change-form #productimage_set-group td.field-color select,
+.model-product.change-form #productimage_set-group td.field-color .select2-container {
+    min-width: 140px !important;
+    width: 140px !important;
+    max-width: none !important;
+}
+
+.model-product.change-form #productimage_set-group td.field-color .select2-selection__rendered {
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.model-product.change-form #productimage_set-group td.field-preview {
+    width: 90px;
+    min-width: 90px;
+}
+
+.model-product.change-form #productimage_set-group td.field-image {
+    min-width: 220px;
+}
+
+.model-product.change-form #productimage_set-group td.field-alt {
+    min-width: 140px;
+}
+
+/* Sidebar: show full menu labels (no ellipsis) */
+.main-sidebar .nav-sidebar .nav-link p,
+.main-sidebar .nav-sidebar .nav-link span {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+}
+
+.main-sidebar {
+    min-width: 260px !important;
+}
+
+@media (min-width: 992px) {
+    body:not(.sidebar-collapse) .main-sidebar,
+    body:not(.sidebar-collapse) .main-sidebar::before {
+        width: 260px !important;
+    }
+
+    body:not(.sidebar-collapse) .content-wrapper,
+    body:not(.sidebar-collapse) .main-footer {
+        margin-left: 260px !important;
+    }
+}
+
 /* Price management */
 .model-productvariant.change-list #content-main::before {
     content: attr(data-stats);

@@ -407,7 +407,7 @@ class ProductVariant(PrismaModel):
         Product,
         verbose_name='Товар',
         db_column='productId',
-        on_delete=models.RESTRICT,
+        on_delete=models.CASCADE,
         related_name='variants',
     )
     memory = models.ForeignKey(
@@ -546,7 +546,9 @@ class OrderItem(PrismaModel):
         ProductVariant,
         verbose_name='Вариант товара',
         db_column='productVariantId',
-        on_delete=models.RESTRICT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='order_items',
     )
     quantity = models.PositiveIntegerField('Количество', default=1)

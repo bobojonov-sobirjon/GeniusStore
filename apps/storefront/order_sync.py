@@ -45,6 +45,19 @@ def _resolve_variant(product_id: Any) -> ProductVariant | None:
 
 def _line_payload(item: OrderItem) -> dict[str, Any]:
     v = item.product_variant
+    if v is None:
+        return {
+            'product_id': None,
+            'productId': None,
+            'title': 'Товар удалён',
+            'slug': None,
+            'quantity': item.quantity,
+            'unitPrice': item.unit_price,
+            'lineTotal': item.line_total,
+            'image': None,
+            'memory': None,
+            'color': None,
+        }
     p = v.product
     return {
         'product_id': str(v.id),
