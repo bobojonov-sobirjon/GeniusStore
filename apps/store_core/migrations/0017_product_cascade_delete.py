@@ -7,25 +7,19 @@ from django.db import migrations, models
 def _drop_fk(cursor, table: str, column: str) -> None:
     cursor.execute(
         """
-        DO $$
-        DECLARE r RECORD;
-        BEGIN
-            FOR r IN (
-                SELECT con.conname
-                FROM pg_constraint con
-                JOIN pg_class rel ON rel.oid = con.conrelid
-                JOIN pg_attribute att ON att.attrelid = con.conrelid
-                    AND att.attnum = ANY(con.conkey)
-                WHERE rel.relname = %s
-                  AND att.attname = %s
-                  AND con.contype = 'f'
-            ) LOOP
-                EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', %s, r.conname);
-            END LOOP;
-        END $$;
+        SELECT con.conname
+        FROM pg_constraint con
+        JOIN pg_class rel ON rel.oid = con.conrelid
+        JOIN pg_attribute att ON att.attrelid = con.conrelid
+            AND att.attnum = ANY(con.conkey)
+        WHERE rel.relname = %s
+          AND att.attname = %s
+          AND con.contype = 'f'
         """,
-        [table, column, table],
+        [table, column],
     )
+    for (conname,) in cursor.fetchall():
+        cursor.execute(f'ALTER TABLE "{table}" DROP CONSTRAINT "{conname}"')
 
 
 def apply_cascade_fks(apps, schema_editor):
