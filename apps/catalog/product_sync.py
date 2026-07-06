@@ -251,7 +251,6 @@ def update_product(pid: int, data: dict, files) -> Product:
 
 
 def delete_product(pid: int) -> None:
-    ProductVariant.objects.filter(product_id=pid).delete()
     Product.objects.filter(pk=pid).delete()
 
 

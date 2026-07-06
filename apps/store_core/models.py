@@ -109,7 +109,7 @@ class BlogSteps(PrismaModel):
         Blog,
         verbose_name='Статья',
         db_column='blogId',
-        on_delete=models.RESTRICT,
+        on_delete=models.CASCADE,
         related_name='blogSteps',
     )
     created_at = models.DateTimeField('Создан', db_column='createdAt', auto_now_add=True)

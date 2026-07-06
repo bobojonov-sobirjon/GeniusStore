@@ -54,6 +54,55 @@ body.popup #jazzy-actions {
     max-width: none !important;
     padding: 0 !important;
 }
+
+/* Product images inline — color dropdown width (works without collectstatic) */
+.model-product.change-form #productimage_set-group table {
+    min-width: 900px !important;
+}
+.model-product.change-form #productimage_set-group td.field-color,
+.model-product.change-form #productimage_set-group th.field-color {
+    min-width: 240px !important;
+    width: 240px !important;
+}
+.model-product.change-form #productimage_set-group td.field-color select,
+.model-product.change-form #productimage_set-group td.field-color .whale-color-select {
+    min-width: 200px !important;
+    width: 200px !important;
+    max-width: none !important;
+    writing-mode: horizontal-tb !important;
+}
+.model-product.change-form #productimage_set-group .tabular {
+    overflow-x: auto !important;
+}
+
+/* Delete confirmation — buttons must stay readable (not input-gray + white text) */
+body.delete-confirmation .card-body input[type="submit"].btn,
+body.delete-selected-confirmation .card-body input[type="submit"].btn {
+    background: #dc2626 !important;
+    border: 1px solid #dc2626 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    min-height: 44px;
+}
+
+body.delete-confirmation .card-body a.cancel-link,
+body.delete-selected-confirmation .card-body a.cancel-link {
+    background: #f3f4f6 !important;
+    border: 1px solid var(--whale-border) !important;
+    color: var(--whale-text) !important;
+    font-weight: 600 !important;
+    min-height: 44px;
+    display: block;
+    text-align: center;
+    line-height: 1.5;
+    padding: 0.6rem 0.85rem !important;
+}
+
+body.delete-confirmation .card-body a.cancel-link:hover,
+body.delete-selected-confirmation .card-body a.cancel-link:hover {
+    background: #e5e7eb !important;
+    color: var(--whale-text) !important;
+}
 </style>
 {% endblock %}
 
@@ -81,6 +130,19 @@ body.popup #jazzy-actions {
             setTimeout(fixRelatedModalIframe, 50);
             setTimeout(fixRelatedModalIframe, 300);
         });
+
+        function fixProductImageColorSelects() {
+            $('#productimage_set-group td.field-color select, #productimage_set-group td.field-color .select2-container')
+                .css({ 'min-width': '200px', 'width': '200px', 'max-width': 'none' });
+        }
+        if ($('body').hasClass('model-product')) {
+            fixProductImageColorSelects();
+            $(document).on('formset:added', function (event, $row) {
+                if ($row && $row.closest('#productimage_set-group').length) {
+                    fixProductImageColorSelects();
+                }
+            });
+        }
     })(jQuery);
 })();
 </script>

@@ -156,7 +156,7 @@ body,
 }
 
 /* ---- Forms ---- */
-.form-control,
+.form-control:not(.btn),
 select,
 textarea,
 .vTextField,
@@ -170,7 +170,7 @@ textarea,
     min-height: 42px;
 }
 
-.form-control:focus,
+.form-control:not(.btn):focus,
 select:focus,
 textarea:focus {
     border-color: #9ca3af !important;
@@ -292,37 +292,60 @@ textarea:focus {
     margin-top: 0.75rem;
 }
 
-/* Product image inline: color autocomplete must not collapse vertically */
+/* Product image inline: color select must stay wide (no vertical letters) */
+.model-product.change-form .whale-productimage-inline .tabular,
 .model-product.change-form #productimage_set-group .tabular {
-    table-layout: auto;
+    display: block;
     width: 100%;
+    overflow-x: auto;
+    table-layout: auto !important;
 }
 
+.model-product.change-form .whale-productimage-inline table,
+.model-product.change-form #productimage_set-group table {
+    width: 100% !important;
+    min-width: 900px;
+    table-layout: auto !important;
+}
+
+.model-product.change-form .whale-productimage-inline th.field-color,
+.model-product.change-form .whale-productimage-inline td.field-color,
+.model-product.change-form #productimage_set-group th.field-color,
 .model-product.change-form #productimage_set-group td.field-color {
-    min-width: 200px;
-    width: 200px;
-    vertical-align: middle !important;
-}
-
-.model-product.change-form #productimage_set-group td.field-color .related-widget-wrapper {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 4px;
-    min-width: 180px;
-}
-
-.model-product.change-form #productimage_set-group td.field-color select,
-.model-product.change-form #productimage_set-group td.field-color .select2-container {
-    min-width: 140px !important;
-    width: 140px !important;
+    min-width: 240px !important;
+    width: 240px !important;
     max-width: none !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+.model-product.change-form .whale-productimage-inline td.field-color .related-widget-wrapper,
+.model-product.change-form #productimage_set-group td.field-color .related-widget-wrapper {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 220px !important;
+    width: 100% !important;
+}
+
+.model-product.change-form .whale-productimage-inline td.field-color select,
+.model-product.change-form .whale-productimage-inline td.field-color .whale-color-select,
+.model-product.change-form #productimage_set-group td.field-color select,
+.model-product.change-form #productimage_set-group td.field-color .whale-color-select,
+.model-product.change-form #productimage_set-group td.field-color .select2-container {
+    min-width: 200px !important;
+    width: 200px !important;
+    max-width: none !important;
+    flex: 1 1 200px !important;
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap !important;
 }
 
 .model-product.change-form #productimage_set-group td.field-color .select2-selection__rendered {
     white-space: nowrap !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible !important;
+    text-overflow: clip !important;
 }
 
 .model-product.change-form #productimage_set-group td.field-preview {
@@ -331,11 +354,16 @@ textarea:focus {
 }
 
 .model-product.change-form #productimage_set-group td.field-image {
-    min-width: 220px;
+    min-width: 240px;
 }
 
 .model-product.change-form #productimage_set-group td.field-alt {
-    min-width: 140px;
+    min-width: 160px;
+}
+
+.model-product.change-form #productimage_set-group td.field-sort_order,
+.model-product.change-form #productimage_set-group td.field-is_primary {
+    min-width: 80px;
 }
 
 /* Sidebar: show full menu labels (no ellipsis) */
@@ -570,4 +598,33 @@ body.popup #jazzy-actions {
     width: 100% !important;
     max-width: none !important;
     padding: 0 !important;
+}
+
+/* Delete confirmation — readable button labels */
+body.delete-confirmation .card-body input[type="submit"].btn,
+body.delete-selected-confirmation .card-body input[type="submit"].btn {
+    background: #dc2626 !important;
+    border: 1px solid #dc2626 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    min-height: 44px;
+}
+
+body.delete-confirmation .card-body a.cancel-link,
+body.delete-selected-confirmation .card-body a.cancel-link {
+    background: #f3f4f6 !important;
+    border: 1px solid var(--whale-border) !important;
+    color: var(--whale-text) !important;
+    font-weight: 600 !important;
+    min-height: 44px;
+    display: block;
+    text-align: center;
+    line-height: 1.5;
+    padding: 0.6rem 0.85rem !important;
+}
+
+body.delete-confirmation .card-body a.cancel-link:hover,
+body.delete-selected-confirmation .card-body a.cancel-link:hover {
+    background: #e5e7eb !important;
+    color: var(--whale-text) !important;
 }

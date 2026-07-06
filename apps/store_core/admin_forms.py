@@ -9,6 +9,19 @@ class ProductImageForm(forms.ModelForm):
     class Meta:
         model = ProductImage
         fields = ('color', 'image', 'alt', 'sort_order', 'is_primary')
+        widgets = {
+            'color': forms.Select(attrs={
+                'class': 'whale-color-select',
+                'style': 'min-width: 200px; width: 100%; max-width: 100%;',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['color'].widget.attrs.setdefault('class', 'whale-color-select')
+        self.fields['color'].widget.attrs.setdefault(
+            'style', 'min-width: 200px; width: 100%; max-width: 100%;',
+        )
 
     def clean(self):
         cleaned = super().clean()

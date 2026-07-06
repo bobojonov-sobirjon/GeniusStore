@@ -168,10 +168,9 @@ class ProductImageInline(admin.TabularInline):
     model = m.ProductImage
     form = ProductImageForm
     extra = 1
-    classes = ('whale-card',)
+    classes = ('whale-card', 'whale-productimage-inline')
     fields = ('preview', 'color', 'image', 'alt', 'sort_order', 'is_primary')
     readonly_fields = ('preview',)
-    autocomplete_fields = ('color',)
     verbose_name = 'Фото'
     verbose_name_plural = 'Изображения по цветам (для смены фото на сайте укажите цвет)'
 
