@@ -80,19 +80,29 @@ class ProductAdminForm(forms.ModelForm):
         }
 
 
-class ProductVariantInlineForm(forms.ModelForm):
+class ProductVariantAdminForm(forms.ModelForm):
     class Meta:
         model = ProductVariant
-        fields = (
-            'memory', 'color', 'sim_type', 'price', 'old_price',
-            'discount', 'is_available', 'description', 'images',
-        )
+        fields = '__all__'
         labels = {
             'description': 'Описание варианта',
         }
         help_texts = {
+            'memory': 'Необязательно — для товаров без объёма памяти (наушники, аксессуары).',
             'description': (
                 'Текст только для этого цвета/памяти. '
                 'На сайте меняется при выборе варианта.'
             ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['memory'].required = False
+
+
+class ProductVariantInlineForm(ProductVariantAdminForm):
+    class Meta(ProductVariantAdminForm.Meta):
+        fields = (
+            'memory', 'color', 'sim_type', 'price', 'old_price',
+            'discount', 'is_available', 'description', 'images',
+        )

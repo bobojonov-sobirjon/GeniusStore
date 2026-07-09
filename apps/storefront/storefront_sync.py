@@ -56,7 +56,7 @@ def variant_card(v: ProductVariant) -> dict[str, Any]:
         'discount': v.discount,
         'isAvailable': v.is_available,
         'image': media_url(_first_image(product_gallery_images(p) or v.images)),
-        'memory': {'id': v.memory_id, 'name': v.memory.name},
+        'memory': {'id': v.memory_id, 'name': v.memory.name} if v.memory_id else None,
         'color': {'id': v.color_id, 'name': v.color.name, 'hex': v.color.hex},
         'brand': {'id': p.brand_id, 'name': p.brand.name},
         'category': {'id': p.category_id, 'name': p.category.name, 'slug': p.category.slug},

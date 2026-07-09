@@ -35,6 +35,13 @@ def _truthy(val: Any) -> bool:
     return str(val).lower() in ('true', '1', 'yes')
 
 
+def _optional_memory_id(variant: dict) -> int | None:
+    raw = variant.get('memoryId')
+    if raw in (None, ''):
+        return None
+    return int(raw)
+
+
 def _parse_variants(raw: Any) -> list[dict]:
     if raw is None:
         return []
@@ -122,7 +129,7 @@ def create_product(data: dict, files) -> Product:
         pv = ProductVariant.objects.create(
             id=str(uuid.uuid4()),
             product=p,
-            memory_id=int(variant['memoryId']),
+            memory_id=_optional_memory_id(variant),
             price=float(variant['price']),
             old_price=float(variant['oldPrice']) if variant.get('oldPrice') not in (None, '') else None,
             discount=int(variant['discount']) if variant.get('discount') not in (None, '') else None,
@@ -205,7 +212,8 @@ def update_product(pid: int, data: dict, files) -> Product:
         vid = variant.get('id')
         if vid:
             pv = ProductVariant.objects.select_for_update().get(pk=str(vid))
-            pv.memory_id = int(variant['memoryId'])
+            if 'memoryId' in variant:
+                pv.memory_id = _optional_memory_id(variant)
             pv.price = float(variant['price'])
             pv.old_price = float(variant['oldPrice']) if variant.get('oldPrice') not in (None, '') else None
             pv.discount = int(variant['discount']) if variant.get('discount') not in (None, '') else None
@@ -230,7 +238,7 @@ def update_product(pid: int, data: dict, files) -> Product:
             pv = ProductVariant.objects.create(
                 id=str(uuid.uuid4()),
                 product=p,
-                memory_id=int(variant['memoryId']),
+                memory_id=_optional_memory_id(variant),
                 price=float(variant['price']),
                 old_price=float(variant['oldPrice']) if variant.get('oldPrice') not in (None, '') else None,
                 discount=int(variant['discount']) if variant.get('discount') not in (None, '') else None,

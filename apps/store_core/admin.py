@@ -11,6 +11,7 @@ from apps.store_core.admin_forms import (
     ProductAdminForm,
     ProductCharacteristicForm,
     ProductImageForm,
+    ProductVariantAdminForm,
     ProductVariantInlineForm,
 )
 from apps.store_core.category_specs import spec_field_names_for_category
@@ -308,6 +309,7 @@ class ProductImageAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
 
 @admin.register(m.ProductVariant)
 class ProductVariantAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
+    form = ProductVariantAdminForm
     drawer_add = False
     list_display = (
         'product', 'category_tag', 'memory', 'color_tag',
