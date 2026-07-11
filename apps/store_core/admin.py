@@ -1,7 +1,7 @@
 """Django admin for Prisma-backed store tables (unmanaged models)."""
 from __future__ import annotations
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.http import HttpResponse
 from django.utils.html import format_html
 
@@ -15,6 +15,7 @@ from apps.store_core.admin_forms import (
     ProductVariantInlineForm,
 )
 from apps.store_core.category_specs import spec_field_names_for_category
+from apps.store_core.product_duplicate import duplicate_product
 
 
 class WhaleStoreAdminMixin:
@@ -225,6 +226,38 @@ class ProductAdmin(WhaleStoreAdminMixin, admin.ModelAdmin):
     ordering = ('-created_at',)
     prepopulated_fields = {'slug': ('title',)}
     inlines = (ProductImageInline, ProductVariantInline, ProductCharacteristicInline)
+    actions = ('make_product_copy',)
+
+    @admin.action(description='Сделать копию выбранных товаров')
+    def make_product_copy(self, request, queryset):
+        created = []
+        errors = 0
+        for product in queryset.prefetch_related(
+            'product_images',
+            'characteristics',
+            'variants__sim_type_links',
+        ).order_by('id'):
+            try:
+                copy = duplicate_product(product)
+                created.append(copy)
+            except Exception as exc:  # noqa: BLE001 — show per-row admin feedback
+                errors += 1
+                self.message_user(
+                    request,
+                    f'Не удалось скопировать «{product}»: {exc}',
+                    level=messages.ERROR,
+                )
+        if created:
+            names = ', '.join(f'«{p.title}»' for p in created[:5])
+            extra = f' и ещё {len(created) - 5}' if len(created) > 5 else ''
+            self.message_user(
+                request,
+                f'Создано копий: {len(created)}. {names}{extra}. '
+                'Откройте копию и измените название/цены.',
+                level=messages.SUCCESS,
+            )
+        if errors and not created:
+            self.message_user(request, 'Копии не созданы.', level=messages.WARNING)
 
     def save_formset(self, request, form, formset, change):
         super().save_formset(request, form, formset, change)
