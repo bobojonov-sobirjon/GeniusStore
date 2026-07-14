@@ -1,7 +1,9 @@
-"""Product characteristic block types (group headings on the storefront)."""
-from __future__ import annotations
+"""Expand ProductCharacteristic.spec_type choices for mobiles."""
 
-SPEC_TYPE_CHOICES: tuple[tuple[str, str], ...] = (
+from django.db import migrations, models
+
+
+SPEC_TYPE_CHOICES = [
     ('main', 'Основные'),
     ('general', 'Общие'),
     ('processor', 'Процессор'),
@@ -22,21 +24,24 @@ SPEC_TYPE_CHOICES: tuple[tuple[str, str], ...] = (
     ('features', 'Особенности'),
     ('package', 'Комплектация'),
     ('extra', 'Дополнительно'),
-)
-
-SPEC_TYPE_LABELS = dict(SPEC_TYPE_CHOICES)
-
-SPEC_TYPE_ORDER = {key: idx for idx, (key, _) in enumerate(SPEC_TYPE_CHOICES)}
-
-# Migrate legacy group titles from ProductSpecGroup / old labels.
-LEGACY_GROUP_TITLE_TO_TYPE: dict[str, str] = {
-    label: key for key, label in SPEC_TYPE_CHOICES
-}
-LEGACY_GROUP_TITLE_TO_TYPE.update({
-    'Основные характеристики': 'main',
-    'Связь и подключение': 'connectivity',
-})
+]
 
 
-def spec_type_label(spec_type: str) -> str:
-    return SPEC_TYPE_LABELS.get(spec_type, spec_type)
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('store_core', '0019_productvariant_memory_optional'),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name='productcharacteristic',
+            name='spec_type',
+            field=models.CharField(
+                choices=SPEC_TYPE_CHOICES,
+                db_column='type',
+                max_length=32,
+                verbose_name='Тип',
+            ),
+        ),
+    ]
