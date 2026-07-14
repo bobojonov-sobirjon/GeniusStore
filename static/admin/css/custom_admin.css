@@ -366,6 +366,66 @@ textarea:focus {
     min-width: 80px;
 }
 
+/* Characteristics inline: Тип select — wider + taller dropdown */
+.model-product.change-form .whale-characteristics-inline .tabular,
+.model-product.change-form #productcharacteristic_set-group .tabular {
+    overflow-x: auto;
+}
+
+.model-product.change-form .whale-characteristics-inline th.field-spec_type,
+.model-product.change-form .whale-characteristics-inline td.field-spec_type,
+.model-product.change-form #productcharacteristic_set-group th.field-spec_type,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type {
+    min-width: 280px !important;
+    width: 280px !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+}
+
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type select,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type .whale-spec-type-select,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type .select2-container {
+    min-width: 260px !important;
+    width: 260px !important;
+    max-width: none !important;
+}
+
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type .select2-selection__rendered {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+/* Select2 open list: full labels, more rows visible */
+.select2-container--open .select2-dropdown.whale-spec-type-dropdown,
+body .select2-dropdown.whale-spec-type-dropdown {
+    min-width: 280px !important;
+    width: auto !important;
+}
+
+body .select2-dropdown.whale-spec-type-dropdown .select2-results__options {
+    max-height: 420px !important;
+}
+
+body .select2-dropdown.whale-spec-type-dropdown .select2-results__option {
+    white-space: nowrap !important;
+    padding: 8px 12px !important;
+}
+
+/* Fallback if Jazzmin selects aren't tagged with our class */
+.model-product.change-form #productcharacteristic_set-group ~ .select2-container .select2-dropdown,
+body.model-product .select2-container--open .select2-dropdown {
+    min-width: 280px !important;
+}
+
+body.model-product .select2-container--open .select2-results__options {
+    max-height: 420px !important;
+}
+
+body.model-product .select2-container--open .select2-results__option {
+    white-space: nowrap !important;
+}
+
 /* Sidebar: show full menu labels (no ellipsis) */
 .main-sidebar .nav-sidebar .nav-link p,
 .main-sidebar .nav-sidebar .nav-link span {

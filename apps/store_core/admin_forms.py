@@ -51,6 +51,10 @@ class ProductCharacteristicForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['spec_type'].widget.attrs.update({
+            'class': 'whale-spec-type-select',
+            'style': 'min-width: 260px; width: 100%;',
+        })
         self.fields['title'].widget.attrs.setdefault(
             'placeholder', 'Серия, Память, Материал…',
         )

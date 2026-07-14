@@ -103,6 +103,29 @@ body.delete-selected-confirmation .card-body a.cancel-link:hover {
     background: #e5e7eb !important;
     color: var(--whale-text) !important;
 }
+
+/* Characteristics — Тип dropdown wider + taller (works without collectstatic) */
+.model-product.change-form #productcharacteristic_set-group th.field-spec_type,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type {
+    min-width: 280px !important;
+    width: 280px !important;
+}
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type select,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type .whale-spec-type-select,
+.model-product.change-form #productcharacteristic_set-group td.field-spec_type .select2-container {
+    min-width: 260px !important;
+    width: 260px !important;
+    max-width: none !important;
+}
+body.model-product .select2-container--open .select2-dropdown {
+    min-width: 280px !important;
+}
+body.model-product .select2-container--open .select2-results__options {
+    max-height: 420px !important;
+}
+body.model-product .select2-container--open .select2-results__option {
+    white-space: nowrap !important;
+}
 </style>
 {% endblock %}
 
@@ -135,11 +158,20 @@ body.delete-selected-confirmation .card-body a.cancel-link:hover {
             $('#productimage_set-group td.field-color select, #productimage_set-group td.field-color .select2-container')
                 .css({ 'min-width': '200px', 'width': '200px', 'max-width': 'none' });
         }
+        function fixSpecTypeSelects() {
+            $('#productcharacteristic_set-group td.field-spec_type select, #productcharacteristic_set-group td.field-spec_type .select2-container')
+                .css({ 'min-width': '260px', 'width': '260px', 'max-width': 'none' });
+        }
         if ($('body').hasClass('model-product')) {
             fixProductImageColorSelects();
+            fixSpecTypeSelects();
+            setTimeout(fixSpecTypeSelects, 300);
             $(document).on('formset:added', function (event, $row) {
                 if ($row && $row.closest('#productimage_set-group').length) {
                     fixProductImageColorSelects();
+                }
+                if ($row && $row.closest('#productcharacteristic_set-group').length) {
+                    setTimeout(fixSpecTypeSelects, 50);
                 }
             });
         }

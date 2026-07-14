@@ -205,12 +205,12 @@ class ProductCharacteristicInline(admin.TabularInline):
     model = m.ProductCharacteristic
     form = ProductCharacteristicForm
     extra = 3
-    classes = ('whale-card',)
+    classes = ('whale-card', 'whale-characteristics-inline')
     fields = ('spec_type', 'sort_order', 'title', 'value_text')
     ordering = ('spec_type', 'sort_order', 'title')
     verbose_name = 'Строка'
     verbose_name_plural = (
-        'Характеристики — выберите тип (Основные характеристики, Процессор, Корпус…), '
+        'Характеристики — выберите тип (Основные, Накопитель, Связь…), '
         'укажите название и значение'
     )
 
