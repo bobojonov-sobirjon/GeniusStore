@@ -35,7 +35,7 @@ GET /api/product/slug/apple-iphone-13
 |------------|--------|--------------|----------|
 | `colorId`  | number | нет          | ID цвета из `colors[].id` |
 | `memoryId` | number | нет          | ID памяти из `colors[].memories[].memoryId` |
-| `simTypeId`| UUID   | нет          | ID типа SIM из `selectedVariant.simTypes[].simTypeId` |
+| `simTypeId`| UUID   | нет          | ID типа SIM из `colors[].memories[].simTypes[].simTypeId` или `selectedVariant.simTypes[].simTypeId` |
 
 ### Примеры запросов
 
@@ -93,7 +93,8 @@ GET /api/product/slug/apple-iphone-13?colorId=2&memoryId=1&simTypeId=40b098b1-d7
 |------|----------------|
 | `colors[]` | Блок выбора **цвета**: кружки с `hex`, список памяти и цен по каждому цвету |
 | `colors[].images` | Превью галереи для конкретного цвета (можно показать при hover) |
-| `colors[].memories[]` | Кнопки **памяти** внутри выбранного цвета: `name`, `price`, `variantId` |
+| `colors[].memories[]` | Кнопки **памяти** внутри выбранного цвета: `name`, `price`, `variantId`, `simTypes` |
+| `colors[].memories[].simTypes[]` | Кнопки **SIM / eSIM** для выбранного цвета и памяти: `simTypeId`, `variantId`, `price` |
 | `images` | **Главная галерея** на странице — всегда соответствует `selectedVariant` |
 | `selectedVariant` | Текущий выбранный вариант: цена, `id` для корзины, SIM-типы, картинки |
 | `selectedVariant.simTypes[]` | Переключатель **SIM / eSIM** с отдельными ценами |
@@ -221,7 +222,23 @@ API отдаёт **все** группы. Скрытие лишних групп
       "price": 43500,
       "oldPrice": null,
       "discount": null,
-      "isAvailable": true
+      "isAvailable": true,
+      "simTypes": [
+        {
+          "variantId": "abf93448-91ec-4856-8ca9-0a8dffa7a678",
+          "productVariantId": "abf93448-91ec-4856-8ca9-0a8dffa7a678",
+          "simTypeId": "f74f962c-088a-4f27-b6c4-35f9bdb1a873",
+          "price": 43500,
+          "simType": { "id": "f74f962c-088a-4f27-b6c4-35f9bdb1a873", "name": "2 nano-SIM" }
+        },
+        {
+          "variantId": "f2ec66b0-a4a4-4096-b447-322f900e856d",
+          "productVariantId": "f2ec66b0-a4a4-4096-b447-322f900e856d",
+          "simTypeId": "6c9cfc6b-a4a4-4096-b447-322f900e856d",
+          "price": 43500,
+          "simType": { "id": "6c9cfc6b-a4a4-4096-b447-322f900e856d", "name": "Nano SIM + eSIM" }
+        }
+      ]
     }
   ]
 }
@@ -230,6 +247,7 @@ API отдаёт **все** группы. Скрытие лишних групп
 - **`hex`** — цвет кружка в пикере.
 - **`images`** — фото только этого цвета (4+ штук).
 - **`memories`** — доступные объёмы памяти для этого цвета.
+- **`memories[].simTypes`** — доступные SIM-варианты именно для этой пары цвет + память.
 
 ---
 
@@ -300,7 +318,7 @@ API отдаёт **все** группы. Скрытие лишних групп
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Клик по SIM+eSIM                                         │
 │    GET ...?colorId=13&memoryId=1&simTypeId=6c9cfc6b-...     │
-│    → price в selectedVariant меняется на цену из simTypes   │
+│    → selectedVariant переключается на нужный SIM-вариант    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -386,7 +404,7 @@ POST /api/product/trade-in-request   ✅
 - [ ] Пикер памяти: `colors[active].memories[]` или query `memoryId`
 - [ ] Галерея: корневое `images` после каждого ответа API
 - [ ] Цена: `selectedVariant.price`
-- [ ] SIM: кнопки из `selectedVariant.simTypes`, при клике — `simTypeId` в query
+- [ ] SIM: кнопки из `colors[active].memories[active].simTypes[]`, при клике — `simTypeId` в query
 - [ ] Корзина: `selectedVariant.id` как `variantId`
 - [ ] Ошибка 400: показать сообщение, сбросить на дефолтный вариант
 - [ ] Trade-in: `POST /api/product/trade-in-request` (без дубля `api`)

@@ -99,6 +99,26 @@ def _resolve_variant_images(
     return variant_gallery_images(v, product=product, request=request)
 
 
+def _variant_supports_sim_type(v: ProductVariant, sim_type_id: str) -> bool:
+    if v.sim_type_id and str(v.sim_type_id) == sim_type_id:
+        return True
+    return any(str(item.get('simTypeId')) == sim_type_id for item in build_variant_sim_types(v))
+
+
+def _sim_options_for_memory_variant(v: ProductVariant) -> list[dict[str, Any]]:
+    options: list[dict[str, Any]] = []
+    for item in build_variant_sim_types(v):
+        option = dict(item)
+        option['price'] = _json_safe(option.get('price'))
+        option['variantId'] = str(v.id)
+        option['oldPrice'] = _json_safe(v.old_price)
+        option['discount'] = v.discount
+        option['isAvailable'] = v.is_available
+        option['description'] = v.description
+        options.append(option)
+    return options
+
+
 def _sim_link_to_dict(link: ProductVariantSimType) -> dict[str, Any]:
     st = link.sim_type
     return {
@@ -180,8 +200,9 @@ def _build_color_options(
     product: Product,
     request=None,
 ) -> list[dict[str, Any]]:
-    """Unique colors with gallery + memory/price variants (Whale Store color picker)."""
+    """Unique colors with gallery + memory + SIM variants (Whale Store pickers)."""
     by_color: dict[int, dict[str, Any]] = {}
+    by_memory: dict[tuple[int, int | None], dict[str, Any]] = {}
     for v in variants:
         if not v.color_id:
             continue
@@ -196,16 +217,28 @@ def _build_color_options(
                 'memories': [],
             }
         memory = getattr(v, 'memory', None)
-        by_color[v.color_id]['memories'].append({
-            'variantId': str(v.id),
-            'memoryId': v.memory_id,
-            'name': memory.name if memory else None,
-            'price': _json_safe(v.price),
-            'oldPrice': _json_safe(v.old_price),
-            'discount': v.discount,
-            'isAvailable': v.is_available,
-            'description': v.description,
-        })
+        key = (v.color_id, v.memory_id)
+        if key not in by_memory:
+            by_memory[key] = {
+                'variantId': str(v.id),
+                'memoryId': v.memory_id,
+                'name': memory.name if memory else None,
+                'price': _json_safe(v.price),
+                'oldPrice': _json_safe(v.old_price),
+                'discount': v.discount,
+                'isAvailable': v.is_available,
+                'description': v.description,
+                'simTypes': [],
+            }
+            by_color[v.color_id]['memories'].append(by_memory[key])
+        memory_row = by_memory[key]
+        existing_sim_ids = {str(item.get('simTypeId')) for item in memory_row['simTypes']}
+        for option in _sim_options_for_memory_variant(v):
+            sim_id = str(option.get('simTypeId'))
+            if sim_id and sim_id in existing_sim_ids:
+                continue
+            memory_row['simTypes'].append(option)
+            existing_sim_ids.add(sim_id)
     return list(by_color.values())
 
 
@@ -250,6 +283,8 @@ def resolve_selected_variant(
         pool = [v for v in pool if v.color_id == selection.color_id]
     if selection.memory_id is not None:
         pool = [v for v in pool if v.memory_id == selection.memory_id]
+    if selection.sim_type_id is not None:
+        pool = [v for v in pool if _variant_supports_sim_type(v, selection.sim_type_id)]
     if not pool:
         return None
     return pool[0]
@@ -285,6 +320,8 @@ def apply_product_selection(
                 parts.append(f'colorId={selection.color_id}')
             if selection.memory_id is not None:
                 parts.append(f'memoryId={selection.memory_id}')
+            if selection.sim_type_id is not None:
+                parts.append(f'simTypeId={selection.sim_type_id}')
             raise ValueError('Вариант не найден: ' + ', '.join(parts))
     else:
         selected = variants[0] if variants else None

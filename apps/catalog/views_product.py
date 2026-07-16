@@ -214,7 +214,7 @@ class ProductSlugDetailView(APIView):
         summary='Карточка товара по slug',
         description=(
             'Уникальный slug товара. Возвращает товар с brand, category, condition, model, '
-            'массивом `colors` (цвет → фото → память/цена), `variants` и `selectedVariant`.\n\n'
+            'массивом `colors` (цвет → фото → память → SIM/цена), `variants` и `selectedVariant`.\n\n'
             '**Фильтр варианта (query, опционально):** передайте `colorId`, `memoryId`, `simTypeId` — '
             'сервер подберёт вариант, обновит `images`, `specifications` и `selectedVariant`. '
             'Без параметров выбирается первый вариант.\n\n'
@@ -240,7 +240,10 @@ class ProductSlugDetailView(APIView):
                 OpenApiTypes.UUID,
                 OpenApiParameter.QUERY,
                 required=False,
-                description='ID типа SIM (из `selectedVariant.simTypes[].simTypeId`); меняет цену варианта',
+                description=(
+                    'ID типа SIM (из `colors[].memories[].simTypes[].simTypeId` '
+                    'или `selectedVariant.simTypes[].simTypeId`); выбирает SIM-вариант'
+                ),
             ),
         ],
     )
